@@ -2,7 +2,7 @@
 
 Meteo a 3 giorni sulle Alpi occidentali, direttamente sulla mappa satellitare. Pensato per pianificare escursioni: pioggia, vento, temperature, rifugi e sentieri.
 
-**File singolo, zero dipendenze da installare, nessun account.** Apri `meteotrekking.html` in un browser (doppio clic) e funziona.
+**File singolo, zero dipendenze da installare, nessun account.** Apri `index.html` in un browser (doppio clic) e funziona.
 
 ## Funzioni
 
