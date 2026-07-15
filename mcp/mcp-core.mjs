@@ -140,6 +140,27 @@ async function forecast(lat, lon, giorni) {
 const asText = o => ({ content: [{ type: 'text', text: JSON.stringify(o, null, 2) }] });
 const asError = msg => ({ content: [{ type: 'text', text: JSON.stringify({ errore: msg }) }], isError: true });
 
+// ---------- fonti ufficiali (link curati: Nimbus/Arpa Piemonte, Centro Funzionale VDA, Météo-France) ----------
+const FONTI_PIEMONTE = [
+  { nome: 'Arpa Piemonte — Bollettino meteo', url: 'https://www.arpa.piemonte.it/bollettino/previsioni-meteorologiche', descrizione: 'Previsioni ufficiali regionali, emesse quotidianamente dal Servizio Meteorologico regionale' },
+  { nome: 'Arpa Piemonte — Bollettini rischi naturali', url: 'https://www.arpa.piemonte.it/bollettini', descrizione: 'Allerte meteo-idrogeologiche, neve, valanghe' },
+  { nome: 'Nimbus — Bollettino Piemonte', url: 'https://www.nimbus.it/liguria/Webcam/bollettino_piemonte.htm', descrizione: 'Bollettino della Società Meteorologica Italiana per il Piemonte' },
+  { nome: 'Nimbus — Previsioni Piemonte e Valle d\'Aosta', url: 'https://www.nimbus.it/italiameteo/previpiemonte.htm', descrizione: 'Previsioni testuali estese per le due regioni' }
+];
+const FONTI_VALLE_AOSTA = [
+  { nome: 'Centro Funzionale VDA — Bollettino meteo', url: 'https://cf.regione.vda.it/it/bollettino-meteo', descrizione: 'Previsioni ufficiali regionali della Regione Autonoma Valle d\'Aosta' },
+  { nome: 'Centro Funzionale VDA — Meteo alta montagna', url: 'https://cf.regione.vda.it/it/meteo-alta-montagna', descrizione: 'Temperatura, vento e irraggiamento a 3000/4000/5000 m sui 4 versanti alpini' },
+  { nome: 'Centro Funzionale VDA — Allerta', url: 'https://cf.regione.vda.it/it/allerta', descrizione: 'Stato di allerta per rischio idrogeologico, valanghivo, incendi' }
+];
+// coordinate di riferimento (capoluogo/centro) per ordinare i dipartimenti francesi per vicinanza
+const FONTI_FRANCIA = [
+  { nome: 'Savoie (73)', lat: 45.5646, lon: 6.3295, url: 'https://meteofrance.com/previsions-meteo-france/savoie/73', vigilanza: 'https://vigilance.meteofrance.fr/fr/savoie' },
+  { nome: 'Haute-Savoie (74)', lat: 46.0763, lon: 6.6039, url: 'https://meteofrance.com/previsions-meteo-france/haute-savoie/74', vigilanza: 'https://vigilance.meteofrance.fr/fr/haute-savoie' },
+  { nome: 'Hautes-Alpes (05)', lat: 44.5587, lon: 6.0787, url: 'https://meteofrance.com/previsions-meteo-france/hautes-alpes/5', vigilanza: 'https://vigilance.meteofrance.fr/fr/hautes-alpes' },
+  { nome: 'Alpes-de-Haute-Provence (04)', lat: 44.0930, lon: 6.2358, url: 'https://meteofrance.com/previsions-meteo-france/alpes-de-haute-provence/4', vigilanza: 'https://vigilance.meteofrance.fr/fr/alpes-de-haute-provence' },
+  { nome: 'Alpes-Maritimes (06)', lat: 43.9351, lon: 7.1256, url: 'https://meteofrance.com/previsions-meteo-france/alpes-maritimes/6', vigilanza: 'https://vigilance.meteofrance.fr/fr/alpes-maritimes' }
+].map(({ nome, url, vigilanza, ...coord }) => ({ nome, url, vigilanza, descrizione: `Previsioni Météo-France per il dipartimento di ${nome}`, ...coord }));
+
 // ---------- fabbrica del server (tool + prompt) ----------
 export function createServer() {
   const server = new McpServer({ name: 'meteotrekking', version: '1.0.0' });
@@ -287,6 +308,37 @@ export function createServer() {
         .map(c => ({ nome: c.name, tipo: c.type, quota_m: c.ele || undefined, distanza_km: c.distanza_km, lat: c.lat, lon: c.lon }));
       return found.length ? asText({ da: { lat, lon }, raggio_km, soste_camper: found })
         : asError(`Nessuna sosta camper mappata entro ${raggio_km} km`);
+    }
+  );
+
+  server.tool(
+    'bollettini_ufficiali',
+    'Link ai bollettini meteo ufficiali di Piemonte (Arpa Piemonte, Nimbus), Valle d\'Aosta (Centro Funzionale) '
+    + 'e dei dipartimenti francesi limitrofi (Météo-France: Savoie, Haute-Savoie, Hautes-Alpes, Alpes-Maritimes, '
+    + 'Alpes-de-Haute-Provence). Da consultare sempre prima di partire, oltre alle previsioni modello di "previsioni": '
+    + 'sono le fonti istituzionali con avvisi di allerta e valutazione umana dei meteorologi.',
+    {
+      localita: z.string().optional().describe('Nome di comune, rifugio o bivacco: se indicata, ordina i dipartimenti francesi per vicinanza e segnala la zona italiana più prossima'),
+      zona: z.enum(['piemonte', 'valle-aosta', 'francia', 'tutte']).default('tutte').describe('Filtra per zona (default: tutte)')
+    },
+    async ({ localita, zona }) => {
+      let vicino = null;
+      let francia = FONTI_FRANCIA;
+      if (localita) {
+        const { match } = resolvePlace(localita);
+        if (!match) return asError(`Località "${localita}" non trovata`);
+        vicino = { nome: match.name, lat: match.lat, lon: match.lon };
+        francia = [...FONTI_FRANCIA]
+          .sort((a, b) => haversineKm(match, a) - haversineKm(match, b))
+          .map(f => ({ ...f, distanza_km: +haversineKm(match, f).toFixed(0) }));
+      }
+      const out = {};
+      if (vicino) out.localita = vicino;
+      if (zona === 'piemonte' || zona === 'tutte') out.piemonte = FONTI_PIEMONTE;
+      if (zona === 'valle-aosta' || zona === 'tutte') out.valle_aosta = FONTI_VALLE_AOSTA;
+      if (zona === 'francia' || zona === 'tutte') out.francia = francia.map(({ lat, lon, ...f }) => f);
+      out.nota = 'Fonti istituzionali: integrano il modello Open-Meteo usato da "previsioni" con avvisi di allerta e valutazione dei meteorologi regionali.';
+      return asText(out);
     }
   );
 
