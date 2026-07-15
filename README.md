@@ -23,8 +23,12 @@ Previsioni a 3 giorni sulle Alpi occidentali per pianificare escursioni: pioggia
 - **778 rotte principali cliccabili** — Alte Vie, GTA, GR, tour: nome, numero, lunghezza, difficoltà SAC. Più tutti i sentieri segnati come sfondo (Waymarked Trails).
 - **Punti tuoi**: clicchi un punto qualsiasi (un colle, un lago, un bivacco non mappato) e il suo meteo resta sulla mappa, anche alla prossima visita.
 
+### Per l'escursione
+- **Traccia GPX**: carica (o trascina) il file della tua escursione — percorso sulla mappa, **meteo campionato lungo la traccia** (partenza, tappe, arrivo con quota), distanza, **dislivello D+/D−** e **profilo altimetrico**.
+
 ### Comoda
 - Ricerca località con volo sulla mappa, filtro per dimensione dei paesi (dalle città a ogni frazione di valle), geolocalizzazione 🎯, link condivisibile della vista, guida integrata, ottimizzata per mobile.
+- **PWA**: dal telefono, "Aggiungi a schermata Home" — si installa come app e si avvia anche con segnale scarso.
 
 ## 🚀 Uso
 
