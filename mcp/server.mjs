@@ -256,5 +256,57 @@ server.tool(
   }
 );
 
+// ---------- prompt pronti ----------
+server.prompt(
+  'pianifica-uscita-weekend',
+  'Pianifica un\'escursione per il prossimo weekend in una zona delle Alpi occidentali: meteo, giorno migliore, rifugi e rotte.',
+  { zona: z.string().describe('Zona o località di partenza (es. "Valsesia", "Courmayeur", "Val Maira")') },
+  ({ zona }) => ({
+    messages: [{
+      role: 'user',
+      content: {
+        type: 'text',
+        text: `Aiutami a pianificare un'escursione nel weekend in zona ${zona}. Procedi così:
+1. Con "cerca_localita" individua la località di riferimento per "${zona}".
+2. Con "previsioni" (giorni=7) guarda sabato e domenica: finestra asciutta, rischio temporale, vento, temperature.
+3. Con "rifugi_vicini" (raggio 10-15 km) elenca rifugi e bivacchi utili come meta o appoggio, con quota.
+4. Con "sentieri" trova le rotte principali della zona (nome, numero, difficoltà).
+5. Concludi con una raccomandazione secca: quale giorno uscire, in che fascia oraria (usa la finestra asciutta), verso quale rifugio/rotta, e cosa tenere d'occhio (raffiche, temporali pomeridiani, quota).
+Se il meteo è brutto entrambi i giorni, dillo chiaramente e suggerisci un'alternativa a bassa quota o un rinvio.`
+      }
+    }]
+  })
+);
+
+server.prompt(
+  'meteo-rifugio',
+  'Verifica se nei prossimi giorni ha senso salire a un rifugio: meteo in quota, giorno e fascia oraria migliori.',
+  { rifugio: z.string().describe('Nome del rifugio o bivacco (es. "Capanna Margherita", "Rifugio Vieux Crest")') },
+  ({ rifugio }) => ({
+    messages: [{
+      role: 'user',
+      content: {
+        type: 'text',
+        text: `Voglio salire a ${rifugio} nei prossimi giorni. Con "previsioni" (localita="${rifugio}", giorni=5) valuta il meteo in quota: temperature (occhio a gelo/neve), raffiche di vento, finestre asciutte e rischio temporale. Ricava anche la quota del rifugio dalla risposta. Dimmi il giorno e la fascia oraria migliori per la salita, e se c'è un giorno da evitare assolutamente. Sii diretto: se non ha senso andare, dillo.`
+      }
+    }]
+  })
+);
+
+server.prompt(
+  'confronta-localita',
+  'Confronta il meteo di due o più località e scegli dove andare.',
+  { localita: z.string().describe('Località separate da virgola (es. "Alagna, Cervinia, Ceresole Reale")') },
+  ({ localita }) => ({
+    messages: [{
+      role: 'user',
+      content: {
+        type: 'text',
+        text: `Devo scegliere dove fare un'escursione tra: ${localita}. Per ognuna usa "previsioni" (giorni=3) e confrontale su: mm di pioggia, finestra asciutta, rischio temporale, raffiche. Fai una classifica motivata e indica la vincitrice con giorno e fascia oraria consigliati. Se sono tutte brutte, dillo senza girarci intorno.`
+      }
+    }]
+  })
+);
+
 await server.connect(new StdioServerTransport());
 console.error(`meteotrekking-mcp avviato: ${TOWNS.length} comuni, ${HUTS.length} rifugi/bivacchi, ${TRAILS.length} rotte`);

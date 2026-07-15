@@ -51,6 +51,8 @@ cd mcp && npm install     # richiede Node 18+
 | `rifugi_vicini` | Rifugi entro un raggio, ordinati per distanza, con quota |
 | `sentieri` | Rotte principali per nome o vicinanza a una località |
 
+Prompt pronti (dal menu prompt del client): **pianifica-uscita-weekend** (zona → meteo del weekend, rifugi, rotte e raccomandazione secca), **meteo-rifugio** (conviene salire? quando?), **confronta-localita** (classifica tra più mete).
+
 **Claude Code**: già registrato dal file [`.mcp.json`](.mcp.json) — apri Claude Code nella cartella del repo e approva il server.
 
 **Altri client** (es. Claude Desktop): aggiungi alla configurazione MCP:
