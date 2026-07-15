@@ -48,10 +48,10 @@
   .pin-rm:hover { background: var(--blaze); color: var(--ink); }
   #pins-ctl { display: flex; justify-content: space-between; align-items: center; gap: 8px;
     padding: 9px 14px 11px; border-top: 1px solid var(--line);
-    font: 500 9.5px/1.3 var(--mono); color: var(--muted); }
+    font: 500 10px/1.3 var(--mono); color: var(--muted); }
   #pins-ctl button { flex: none; padding: 4px 9px; background: transparent; color: var(--blaze);
     border: 1px solid var(--blaze); border-radius: 5px; cursor: pointer;
-    font: 600 9px/1 var(--cond); letter-spacing: .6px; text-transform: uppercase; }
+    font: 600 10px/1 var(--cond); letter-spacing: .6px; text-transform: uppercase; }
   #pins-ctl button:hover { background: var(--blaze); color: var(--ink); }
   .mt-tag .n { font: 600 13px/1 var(--cond); letter-spacing: .3px; }
   .mt-tag .n .e { font-size: 13px; }
@@ -103,7 +103,7 @@
                border-bottom: 1px solid var(--line); }
   .band .bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 1px; transition: height .2s; }
   .band .ic  { font-size: 10px; opacity: .8; }
-  .band .mm  { font: 500 9px/1 var(--mono); color: var(--muted); }
+  .band .mm  { font: 500 10px/1 var(--mono); color: var(--muted); }
   .day .gust { grid-column: 1 / 2; font: 700 11px/1 var(--mono); color: var(--amber);
                align-self: end; white-space: nowrap; display: flex; align-items: center; gap: 2px; }
   .day .gust .arr { display: inline-block; font-size: 12px; line-height: 1; transform-origin: center; }
@@ -111,18 +111,19 @@
               color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
   .day .sun .ok  { color: var(--dry); }
   .day .sun .wet { color: var(--sky); }
+  .day .sun .warn { color: var(--amber); }
   .day.best { background: linear-gradient(90deg, rgba(229,83,61,.14), transparent 70%);
               box-shadow: inset 3px 0 0 var(--blaze); }
   .day.best .when span::after { content: ' ⭐'; }
 
-  .card-f { padding: 8px 14px 10px; font: 500 9.5px/1.4 var(--mono);
+  .card-f { padding: 8px 14px 10px; font: 500 10px/1.4 var(--mono);
             color: var(--muted); letter-spacing: .2px; }
   .card-h .tref { display: inline-block; background: var(--blaze); color: var(--ink);
     font: 700 11px/1 var(--mono); padding: 2px 5px; border-radius: 4px; margin-right: 3px; }
   .tbody { padding: 10px 14px 4px; }
   .trow { font: 500 12px/1.7 system-ui; color: var(--snow); }
   .trow b { color: var(--snow); }
-  .tsrc { margin-top: 7px; font: 400 9.5px/1.3 var(--mono); color: var(--muted); }
+  .tsrc { margin-top: 7px; font: 400 10px/1.3 var(--mono); color: var(--muted); }
 
   /* ---- HUD ---- */
   #status, #hint {
@@ -133,6 +134,17 @@
   #status { top: 12px; left: 50%; transform: translateX(-50%);
             padding: 7px 15px; border-radius: 20px; display: none; }
   #status::before { content: '◍'; color: var(--blaze); margin-right: 6px; }
+  #toast {
+    position: absolute; z-index: 1500; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); color: var(--snow); border: 1px solid var(--line);
+    border-radius: 22px; padding: 9px 10px 9px 16px; box-shadow: 0 6px 22px rgba(0,0,0,.55);
+    font: 600 12px/1 var(--cond); letter-spacing: .5px; display: flex; align-items: center; gap: 10px;
+  }
+  #toast[hidden] { display: none; }
+  #toast button {
+    padding: 6px 12px; background: var(--blaze); color: var(--ink); border: 0; border-radius: 14px;
+    cursor: pointer; font: 700 11px/1 var(--cond); letter-spacing: .6px; text-transform: uppercase;
+  }
   #hint { bottom: 12px; left: 12px; padding: 7px 12px; border-radius: 7px; color: var(--muted); }
   #hud-left {
     position: absolute; z-index: 1000; top: 12px; left: 12px; width: 230px;
@@ -151,7 +163,7 @@
   #hud-left.collapsed #pins-ctl { display: none; }
   #brand b { font: 700 16px/1 var(--cond); letter-spacing: .5px; color: var(--snow);
              text-transform: uppercase; }
-  #brand span { display: block; font: 500 9px/1 var(--mono); color: var(--muted);
+  #brand span { display: block; font: 500 10px/1 var(--mono); color: var(--muted);
                 letter-spacing: .5px; margin-top: 3px; }
   .brand-btns { display: flex; gap: 6px; margin-top: 9px; }
   #share, #helpbtn { flex: 1; padding: 5px 9px; background: transparent; color: var(--blaze);
@@ -183,20 +195,33 @@
   @media (max-width: 640px) {
     #hud-left { width: 210px; top: 8px; left: 8px; }
     #brand b { font-size: 15px; }
-    #brand span { font-size: 8.5px; }
+    #brand span { font-size: 10px; }
     .mt-tag .n { font-size: 12px; }
     .mt-tag .d { font-size: 10px; }
     .hut { width: 28px; height: 28px; font-size: 17px; }
     #hint { display: none; }
     .leaflet-popup-content { width: 232px !important; }
-    .leaflet-control-zoom a { width: 34px !important; height: 34px !important;
-      line-height: 34px !important; font-size: 20px !important; }
-    .leaflet-touch .leaflet-bar a { width: 34px; height: 34px; line-height: 34px; }
+    .leaflet-control-zoom a { width: 42px !important; height: 42px !important;
+      line-height: 42px !important; font-size: 22px !important; }
+    .leaflet-touch .leaflet-bar a { width: 42px; height: 42px; line-height: 42px; }
     .help-card { padding: 22px 18px; }
     .help-card h1 { font-size: 22px; }
     .day { padding: 8px 12px; }
   }
   .leaflet-control-layers { border-radius: 7px !important; }
+  .geo-btn { font-size: 16px; text-align: center; }
+
+  /* pin temporaneo ricerca: anello pulsante */
+  .spin-wrap { position: relative; width: 46px; height: 46px; }
+  .spin-dot { position: absolute; top: 19px; left: 19px; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--blaze); box-shadow: 0 0 6px rgba(0,0,0,.6); }
+  .spin-ring { position: absolute; inset: 0; border: 3px solid var(--blaze); border-radius: 50%;
+    animation: spin-pulse 1.6s ease-out infinite; }
+  @keyframes spin-pulse {
+    0% { transform: scale(.25); opacity: 1; }
+    100% { transform: scale(1); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .spin-ring { animation: none; opacity: .7; } }
 
   #search {
     position: relative; z-index: 1001; width: 100%;
@@ -262,13 +287,14 @@
   </div>
 </div>
 <div id="status"></div>
+<div id="toast" hidden></div>
 <div id="hint">Zoom per il meteo · muovi la mappa per aggiornare</div>
 
 <div id="help" hidden>
   <div class="help-card">
     <button id="helpclose" aria-label="Chiudi">✕</button>
     <h1>MeteoTrekking</h1>
-    <p class="lead">Meteo a 3 giorni sulle Alpi occidentali, direttamente sulla mappa. Pensato per pianificare escursioni: pioggia, vento, temperature, quota neve dei rifugi.</p>
+    <p class="lead">Meteo a 3 giorni sulle Alpi occidentali, direttamente sulla mappa. Pensato per pianificare escursioni: pioggia, vento, temperature, meteo in quota di rifugi e bivacchi.</p>
 
     <h2>Sulla mappa</h2>
     <ul>
@@ -5202,10 +5228,17 @@ q.addEventListener('input', () => {
     .sort((a, b) => (norm(a.name).startsWith(t) ? 0 : 1) - (norm(b.name).startsWith(t) ? 0 : 1)
       || b.pop - a.pop)
     .slice(0, 8);
+  if (!hits.length) {
+    const li = document.createElement('li');
+    li.style.cursor = 'default'; li.style.opacity = '.6';
+    li.innerHTML = `<b>Nessun risultato</b><span>prova con meno lettere</span>`;
+    qres.appendChild(li);
+    return;
+  }
   for (const c of hits) {
     const li = document.createElement('li');
     li.innerHTML = `<b>${c.name}</b><span>${c.pop ? c.pop.toLocaleString('it-IT') + ' ab.' : ''}</span>`;
-    li.onclick = () => { q.value = c.name; qres.innerHTML = ''; map.flyTo([c.lat, c.lon], 12); };
+    li.onclick = () => { q.value = c.name; qres.innerHTML = ''; map.flyTo([c.lat, c.lon], 12); dropSearchPin(c); };
     qres.appendChild(li);
   }
 });
@@ -5213,13 +5246,34 @@ document.addEventListener('click', e => {
   if (!document.getElementById('search').contains(e.target)) qres.innerHTML = '';
 });
 
+// pin temporaneo sul paese cercato: anello pulsante che svanisce da solo
+let searchPin = null, searchPinTimer = null;
+function dropSearchPin(c) {
+  if (searchPin) map.removeLayer(searchPin);
+  clearTimeout(searchPinTimer);
+  const icon = L.divIcon({
+    html: `<div class="spin-wrap"><div class="spin-ring"></div><div class="spin-dot"></div></div>`,
+    className: '', iconSize: [46, 46], iconAnchor: [23, 23]
+  });
+  searchPin = L.marker([c.lat, c.lon], { icon, interactive: false, zIndexOffset: 900 }).addTo(map);
+  searchPinTimer = setTimeout(() => { map.removeLayer(searchPin); searchPin = null; }, 8000);
+}
+
 // --- località nel riquadro visibile, filtrate per abitanti (TOWNS già ordinato per pop desc) ---
+// Decluttering: griglia di celle-schermo ~ dimensione di un tag; in ogni cella vince
+// il comune più popoloso (il primo incontrato, l'array è già pop-desc). Niente pile illeggibili.
+const CELL_W = 130, CELL_H = 44;
 function citiesInView(b) {
   const mp = minPop;
-  const out = [];
+  const out = [], cells = new Set();
   for (const c of TOWNS) {
     if (c.pop < mp) continue;
-    if (b.contains([c.lat, c.lon])) out.push(c);
+    if (!b.contains([c.lat, c.lon])) continue;
+    const pt = map.latLngToContainerPoint([c.lat, c.lon]);
+    const key = Math.floor(pt.x / CELL_W) + ':' + Math.floor(pt.y / CELL_H);
+    if (cells.has(key)) continue;
+    cells.add(key);
+    out.push(c);
     if (out.length >= MAX_CITIES) break;
   }
   return out;
@@ -5280,12 +5334,15 @@ function dryWindow(h, date, sunriseISO, sunsetISO) {
   return { best, daylight: ss - sr };
 }
 
-// indice del giorno migliore per uscire = più ore di luce all'asciutto
+// giorno migliore = più ore di luce all'asciutto; i giorni di temporale (WMO>=95)
+// sono penalizzati: vincono solo se non c'è alternativa senza temporale
+const isStorm = code => code >= 95;
 function bestDayIndex(d, h) {
-  let bi = 0, bl = -1;
+  let bi = 0, bs = -1;
   for (let i = 0; i < d.time.length; i++) {
     const w = dryWindow(h, d.time[i], d.sunrise[i], d.sunset[i]).best.len;
-    if (w > bl) { bl = w; bi = i; }
+    const score = w + (isStorm(d.weathercode[i]) ? -100 : 0);
+    if (score > bs) { bs = score; bi = i; }
   }
   return bi;
 }
@@ -5331,7 +5388,10 @@ function buildPopup(title, wx, pinId) {
     const [wd, dn] = dayLabel(d.time[i]);
     const deg = d.wind_direction_10m_dominant[i];
     const { best: win, daylight } = dryWindow(wx.hourly, d.time[i], d.sunrise[i], d.sunset[i]);
+    const storm = isStorm(d.weathercode[i]);
+    // con temporale previsto la finestra asciutta non è una promessa: degrada il claim
     const winTxt = win.len === 0 ? `<span class="wet">☔ pioggia in giornata</span>`
+      : storm ? `<span class="warn">⚠️ finestra ${win.start}–${win.end} ma rischio temporale</span>`
       : win.len >= daylight ? `<span class="ok">☀️ asciutto tutto il giorno</span>`
       : `<span class="ok">✅ finestra ${win.start}–${win.end}</span>`;
     days += `<div class="day${i === best ? ' best' : ''}">`
@@ -5340,7 +5400,7 @@ function buildPopup(title, wx, pinId) {
       + `<div class="temp"><span class="mn">${Math.round(d.temperature_2m_min[i])}°</span>`
       + ` / <span class="mx">${Math.round(d.temperature_2m_max[i])}°</span></div>`
       + `<div class="gust"><span class="arr" style="transform:rotate(${deg}deg)">↑</span>`
-      + `💨${Math.round(d.wind_gusts_10m_max[i])} ${compass(deg)}</div>`
+      + `💨${Math.round(d.wind_gusts_10m_max[i])}km/h ${compass(deg)}</div>`
       + bandsHtml(rainBands(wx.hourly, d.time[i]))
       + `<div class="sun">🌅 ${fmtHM(d.sunrise[i])} · 🌇 ${fmtHM(d.sunset[i])} &nbsp; ${winTxt}</div>`
       + `</div>`;
@@ -5357,14 +5417,18 @@ function tagHtml(name, wx, extraClass = '') {
   const d = wx.daily;
   const [emo] = wmo(d.weathercode[0]);
   const rain3 = d.precipitation_sum.slice(0, 3).reduce((a, v) => a + v, 0);
-  const gustMax = Math.max(...d.wind_gusts_10m_max);
+  // raffica max dei 3 giorni + direzione DELLO STESSO giorno (coerenza fisica)
+  let gi = 0;
+  for (let i = 1; i < d.wind_gusts_10m_max.length; i++)
+    if (d.wind_gusts_10m_max[i] > d.wind_gusts_10m_max[gi]) gi = i;
+  const gustMax = d.wind_gusts_10m_max[gi];
+  const gustDir = compass(d.wind_direction_10m_dominant[gi]);
   const tmin = Math.round(d.temperature_2m_min[0]), tmax = Math.round(d.temperature_2m_max[0]);
-  const dir0 = compass(d.wind_direction_10m_dominant[0]);
   return `<div class="mt-tag ${extraClass}" style="--edge:${rainColor(rain3 / 3)}">`
     + `<div class="n"><span class="e">${emo}</span> ${name}</div>`
     + `<div class="d"><span class="t"><span class="mn">${tmin}°</span>/<span class="mx">${tmax}°</span></span>`
     + `<span class="sep">·</span><span class="r">${rain3.toFixed(0)}mm</span>`
-    + `<span class="sep">·</span><span class="g">💨${gustMax.toFixed(0)} ${dir0}</span></div></div>`;
+    + `<span class="sep">·</span><span class="g">💨${gustMax.toFixed(0)}km/h ${gustDir}</span></div></div>`;
 }
 
 function marker(city, wx) {
@@ -5397,8 +5461,8 @@ async function refresh() {
       show('Limite richieste · riprovo tra 8s');
       retryTimer = setTimeout(refresh, 8000);
     } else {
-      show('Errore: ' + e.message);
-      setTimeout(hide, 3000);
+      show('Meteo non disponibile al momento · riprova tra poco');
+      setTimeout(hide, 3500);
     }
   }
 }
@@ -5426,6 +5490,28 @@ const hud = document.getElementById('hud-left');
 document.getElementById('hudtoggle').addEventListener('click', () => hud.classList.toggle('collapsed'));
 if (window.matchMedia('(max-width: 640px)').matches) hud.classList.add('collapsed');
 
+// --- geolocalizzazione: "portami dove sono" ---
+const GeoCtl = L.Control.extend({
+  options: { position: 'topright' },
+  onAdd() {
+    const div = L.DomUtil.create('div', 'leaflet-bar');
+    const a = L.DomUtil.create('a', 'geo-btn', div);
+    a.href = '#'; a.title = 'Portami dove sono'; a.textContent = '🎯';
+    L.DomEvent.on(a, 'click', (e) => {
+      L.DomEvent.stop(e);
+      if (!navigator.geolocation) { show('Geolocalizzazione non supportata'); setTimeout(hide, 3000); return; }
+      show('Cerco la tua posizione…');
+      navigator.geolocation.getCurrentPosition(
+        pos => { hide(); map.flyTo([pos.coords.latitude, pos.coords.longitude], 13); },
+        () => { show('Posizione non disponibile (consenso negato?)'); setTimeout(hide, 3500); },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+    return div;
+  }
+});
+map.addControl(new GeoCtl());
+
 // --- guida (overlay) ---
 const help = document.getElementById('help');
 document.getElementById('helpbtn').addEventListener('click', () => { help.hidden = false; });
@@ -5443,17 +5529,29 @@ const savePins = () => {
   try { localStorage.setItem('mt-pins', JSON.stringify(arr)); } catch (e) {}
 };
 
+// nome del comune più vicino (dai dati già in pagina) per dare un titolo umano ai pin
+function nearestTown(lat, lon) {
+  let best = null, bd = Infinity;
+  for (const c of TOWNS) {
+    const d = (c.lat - lat) ** 2 + (c.lon - lon) ** 2;
+    if (d < bd) { bd = d; best = c; }
+  }
+  return bd < 0.02 ? best.name : null;  // ~15 km, oltre = solo coordinate
+}
+
 async function addPin(lat, lon, save = true) {
   const id = 'p' + (++pinSeq);
   let wx;
   try { [wx] = await fetchWeather([{ lat, lon }]); }
   catch (err) { show('Punto: ' + (err.status === 429 ? 'limite, riprova' : 'errore')); setTimeout(hide, 3000); return; }
   if (!wx) return;
-  const title = `📍 ${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-  const icon = L.divIcon({ html: tagHtml('📍 punto', wx, 'pin'), className: '', iconSize: null, iconAnchor: [0, 0] });
+  const near = nearestTown(lat, lon);
+  const title = near ? `📍 vicino a ${near}` : `📍 ${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+  const icon = L.divIcon({ html: tagHtml(near ? `📍 ${near}` : '📍 punto', wx, 'pin'), className: '', iconSize: null, iconAnchor: [0, 0] });
   const m = L.marker([lat, lon], { icon }).bindPopup(buildPopup(title, wx, id), POPUP_OPTS).addTo(pinLayer);
   pinMarkers.set(id, { marker: m, lat, lon });
-  if (save) savePins();
+  if (save) { savePins(); toastUndo(id); }
+  return id;
 }
 window.removePin = (id) => {
   const p = pinMarkers.get(id);
@@ -5462,7 +5560,22 @@ window.removePin = (id) => {
   pinMarkers.delete(id);
   savePins();
 };
-function clearPins() { pinLayer.clearLayers(); pinMarkers.clear(); savePins(); }
+function clearPins() {
+  if (!pinMarkers.size) return;
+  if (!confirm(`Rimuovere tutti i ${pinMarkers.size} punti?`)) return;
+  pinLayer.clearLayers(); pinMarkers.clear(); savePins();
+}
+
+// toast "Punto aggiunto · Annulla": rete di sicurezza per i clic accidentali sulla mappa
+const toast = document.getElementById('toast');
+let toastTimer = null;
+function toastUndo(pinId) {
+  toast.innerHTML = `Punto aggiunto <button id="undopin">Annulla</button>`;
+  toast.hidden = false;
+  document.getElementById('undopin').onclick = () => { removePin(pinId); toast.hidden = true; };
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 5000);
+}
 
 map.on('click', (e) => addPin(e.latlng.lat, e.latlng.lng));
 loadPins().forEach(p => addPin(p.lat, p.lon, false));   // ripristina punti salvati
@@ -5476,7 +5589,7 @@ function hutMarker(h) {
   const label = `${emo} ${h.name}${h.ele ? ` · ${h.ele} m` : ''}`;
   m.bindPopup(`<div class="card-h"><span class="town">${h.name}</span>`
     + `<span class="eye">${h.ele ? h.ele + ' m' : (h.type === 'w' ? 'bivacco' : 'rifugio')}</span></div>`
-    + `<div class="card-f">tocca per il meteo…</div>`, POPUP_OPTS);
+    + `<div class="card-f">carico il meteo…</div>`, POPUP_OPTS);
   m.on('popupopen', async () => {
     try {
       const [wx] = await fetchWeather([{ lat: h.lat, lon: h.lon }]);
@@ -5493,8 +5606,15 @@ function renderHuts() {
   if (!map.hasLayer(hutLayer)) return;
   hutLayer.clearLayers();
   if (map.getZoom() < HUT_MINZOOM) return;
-  const b = map.getBounds();
-  for (const h of HUTS) if (b.contains([h.lat, h.lon])) hutMarker(h).addTo(hutLayer);
+  const b = map.getBounds(), cells = new Set();
+  for (const h of HUTS) {
+    if (!b.contains([h.lat, h.lon])) continue;
+    const pt = map.latLngToContainerPoint([h.lat, h.lon]);
+    const key = Math.floor(pt.x / 36) + ':' + Math.floor(pt.y / 36);   // 1 icona per cella 36px
+    if (cells.has(key)) continue;
+    cells.add(key);
+    hutMarker(h).addTo(hutLayer);
+  }
 }
 
 // --- SENTIERI principali: linee cliccabili (dati OSM) ---
@@ -5524,15 +5644,31 @@ function renderTrails() {
   for (const t of TRAILS) {
     if (!t.p.some(pt => b.contains(pt))) continue;
     const col = t.c && t.c !== 'white' ? t.c : '#E5533D';
-    // linea di hit larga trasparente + linea visibile sottile
-    L.polyline(t.p, { color: '#000', weight: 11, opacity: 0.001, interactive: true })
-      .bindPopup(trailPopup(t), POPUP_OPTS).addTo(trailLines);
-    L.polyline(t.p, { color: col, weight: 3, opacity: .75, interactive: false }).addTo(trailLines);
+    // linea visibile sottile + linea di hit larga trasparente con hover-highlight
+    const vis = L.polyline(t.p, { color: col, weight: 3, opacity: .75, interactive: false }).addTo(trailLines);
+    L.polyline(t.p, { color: '#000', weight: 13, opacity: 0.001, interactive: true })
+      .bindPopup(trailPopup(t), POPUP_OPTS)
+      .on('mouseover', () => vis.setStyle({ weight: 6, opacity: 1 }))
+      .on('mouseout', () => vis.setStyle({ weight: 3, opacity: .75 }))
+      .addTo(trailLines);
   }
 }
 
-map.on('moveend', () => { saveView(); scheduleRefresh(); renderHuts(); renderTrails(); });
-map.on('overlayadd', () => { scheduleRefresh(); renderHuts(); renderTrails(); });
+// hint contestuale: col layer sentieri attivo ricorda che le rotte principali sono cliccabili
+const hintEl = document.getElementById('hint');
+const HINT_BASE = 'Zoom per il meteo · muovi la mappa per aggiornare';
+function updateHint() {
+  const z = map.getZoom();
+  let t = HINT_BASE;
+  if (map.hasLayer(trails) && z >= TRAIL_MINZOOM) t = HINT_BASE + ' · le rotte colorate sono cliccabili';
+  else if (z < HUT_MINZOOM && (map.hasLayer(hutLayer) || map.hasLayer(trails)))
+    t = 'Avvicinati per vedere rifugi e sentieri';
+  hintEl.textContent = t;
+}
+
+map.on('moveend', () => { saveView(); scheduleRefresh(); renderHuts(); renderTrails(); updateHint(); });
+map.on('overlayadd', () => { scheduleRefresh(); renderHuts(); renderTrails(); updateHint(); });
+map.on('overlayremove', updateHint);
 saveView();
 refresh();
 renderHuts();
