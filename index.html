@@ -134,7 +134,15 @@
     background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--blaze);
     border-radius: 9px; box-shadow: 0 4px 18px rgba(0,0,0,.55);
   }
-  #brand { padding: 11px 14px; }
+  #brand { padding: 11px 14px; position: relative; }
+  #hudtoggle { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
+    background: transparent; border: 1px solid var(--line); border-radius: 6px; color: var(--muted);
+    cursor: pointer; font-size: 12px; line-height: 1; transition: transform .2s; }
+  #hudtoggle:hover { border-color: var(--blaze); color: var(--snow); }
+  #hud-left.collapsed #hudtoggle { transform: rotate(-90deg); }
+  #hud-left.collapsed #search,
+  #hud-left.collapsed #filter,
+  #hud-left.collapsed #pins-ctl { display: none; }
   #brand b { font: 700 16px/1 var(--cond); letter-spacing: .5px; color: var(--snow);
              text-transform: uppercase; }
   #brand span { display: block; font: 500 9px/1 var(--mono); color: var(--muted);
@@ -164,6 +172,24 @@
   #helpclose { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 6px;
     background: transparent; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 14px; }
   #helpclose:hover { border-color: var(--blaze); color: var(--snow); }
+
+  /* --- mobile --- */
+  @media (max-width: 640px) {
+    #hud-left { width: 210px; top: 8px; left: 8px; }
+    #brand b { font-size: 15px; }
+    #brand span { font-size: 8.5px; }
+    .mt-tag .n { font-size: 12px; }
+    .mt-tag .d { font-size: 10px; }
+    .hut { width: 28px; height: 28px; font-size: 17px; }
+    #hint { display: none; }
+    .leaflet-popup-content { width: 232px !important; }
+    .leaflet-control-zoom a { width: 34px !important; height: 34px !important;
+      line-height: 34px !important; font-size: 20px !important; }
+    .leaflet-touch .leaflet-bar a { width: 34px; height: 34px; line-height: 34px; }
+    .help-card { padding: 22px 18px; }
+    .help-card h1 { font-size: 22px; }
+    .day { padding: 8px 12px; }
+  }
   .leaflet-control-layers { border-radius: 7px !important; }
 
   #search {
@@ -209,7 +235,9 @@
 <body>
 <div id="map"></div>
 <div id="hud-left">
-  <div id="brand"><b>MeteoTrekking</b><span>Alpi occidentali · 3 giorni</span>
+  <div id="brand">
+    <button id="hudtoggle" aria-label="Comprimi/espandi comandi">▾</button>
+    <b>MeteoTrekking</b><span>Alpi occidentali · 3 giorni</span>
     <div class="brand-btns">
       <button id="share" title="Copia il link a questa vista">🔗 link</button>
       <button id="helpbtn" title="Come si usa">? guida</button>
@@ -5279,6 +5307,9 @@ function bandsHtml(bands) {
   return `<div class="bands">${cells}</div>`;
 }
 
+// opzioni popup: tiene la card lontana dai bordi/HUD durante l'auto-pan (utile su mobile)
+const POPUP_OPTS = { maxWidth: 300, autoPanPaddingTopLeft: [14, 132], autoPanPaddingBottomRight: [14, 24] };
+
 // scheda popup 3 giorni (riusata da marker e da clic sulla mappa)
 function buildPopup(title, wx, pinId) {
   const d = wx.daily;
@@ -5327,13 +5358,16 @@ function tagHtml(name, wx, extraClass = '') {
 
 function marker(city, wx) {
   const icon = L.divIcon({ html: tagHtml(city.name, wx), className: '', iconSize: null, iconAnchor: [0, 0] });
-  return L.marker([city.lat, city.lon], { icon }).bindPopup(buildPopup(city.name, wx));
+  return L.marker([city.lat, city.lon], { icon }).bindPopup(buildPopup(city.name, wx), POPUP_OPTS);
 }
 
 // --- refresh (debounced) ---
-let timer = null, reqId = 0, retryTimer = null;
+let timer = null, reqId = 0, retryTimer = null, popupOpen = false;
+map.on('popupopen', () => { popupOpen = true; });
+map.on('popupclose', () => { popupOpen = false; });
 async function refresh() {
   clearTimeout(retryTimer);
+  if (popupOpen) return;   // non ricostruire i marker mentre una card è aperta (evita che sparisca)
   if (map.getZoom() < MIN_ZOOM_WX) { wxLayer.clearLayers(); hide(); return; }
   if (!map.hasLayer(wxLayer)) return;
   const my = ++reqId;
@@ -5376,6 +5410,11 @@ document.getElementById('share').addEventListener('click', async () => {
   setTimeout(() => { btn.textContent = old; }, 1800);
 });
 
+// --- card comandi comprimibile (chiusa di default su mobile) ---
+const hud = document.getElementById('hud-left');
+document.getElementById('hudtoggle').addEventListener('click', () => hud.classList.toggle('collapsed'));
+if (window.matchMedia('(max-width: 640px)').matches) hud.classList.add('collapsed');
+
 // --- guida (overlay) ---
 const help = document.getElementById('help');
 document.getElementById('helpbtn').addEventListener('click', () => { help.hidden = false; });
@@ -5401,7 +5440,7 @@ async function addPin(lat, lon, save = true) {
   if (!wx) return;
   const title = `📍 ${lat.toFixed(3)}, ${lon.toFixed(3)}`;
   const icon = L.divIcon({ html: tagHtml('📍 punto', wx, 'pin'), className: '', iconSize: null, iconAnchor: [0, 0] });
-  const m = L.marker([lat, lon], { icon }).bindPopup(buildPopup(title, wx, id)).addTo(pinLayer);
+  const m = L.marker([lat, lon], { icon }).bindPopup(buildPopup(title, wx, id), POPUP_OPTS).addTo(pinLayer);
   pinMarkers.set(id, { marker: m, lat, lon });
   if (save) savePins();
 }
@@ -5426,7 +5465,7 @@ function hutMarker(h) {
   const label = `${emo} ${h.name}${h.ele ? ` · ${h.ele} m` : ''}`;
   m.bindPopup(`<div class="card-h"><span class="town">${h.name}</span>`
     + `<span class="eye">${h.ele ? h.ele + ' m' : (h.type === 'w' ? 'bivacco' : 'rifugio')}</span></div>`
-    + `<div class="card-f">tocca per il meteo…</div>`, { maxWidth: 300 });
+    + `<div class="card-f">tocca per il meteo…</div>`, POPUP_OPTS);
   m.on('popupopen', async () => {
     try {
       const [wx] = await fetchWeather([{ lat: h.lat, lon: h.lon }]);
