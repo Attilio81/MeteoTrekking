@@ -1,6 +1,7 @@
 .claude/
 *.jpeg
 *.png
+!docs/*.png
 .playwright-mcp/
 node_modules/
 mcp/_test.mjs
