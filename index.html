@@ -321,6 +321,7 @@
       <li><b>Satellite / Topografica</b> — sfondo mappa.</li>
       <li><b>Sentieri trekking</b> — rotte segnate (CAI/GR). Le rotte principali (Alte Vie, GTA, GR…) sono <b>cliccabili</b>: nome, numero, lunghezza, difficoltà. Da zoom 10.</li>
       <li><b>Rifugi e bivacchi</b> — 🛖 rifugi, ⛺ bivacchi, con quota. Clicca per il meteo del rifugio.</li>
+      <li><b>Radar pioggia (live)</b> — dove sta piovendo adesso (radar, agg. ~10 min).</li>
       <li><b>I miei punti</b> — mostra/nascondi i punti che aggiungi tu.</li>
     </ul>
 
@@ -5177,11 +5178,42 @@ const wxLayer = L.layerGroup().addTo(map);
 const pinLayer = L.layerGroup().addTo(map);   // punti scelti dall'utente (persistono)
 const hutLayer = L.layerGroup().addTo(map);   // rifugi + bivacchi
 
-L.control.layers(
+// carte meteo live (RainViewer, gratis senza chiave): radar pioggia + nuvole IR.
+// I gruppi restano vuoti finché l'API non risponde; frame aggiornato ogni 10 min.
+const radarLayer = L.layerGroup();
+const cloudLayer = L.layerGroup();
+async function loadWxMaps() {
+  try {
+    const r = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    if (!r.ok) return;
+    const j = await r.json();
+    const past = j.radar && j.radar.past;
+    if (past && past.length) {
+      radarLayer.clearLayers();
+      // il tier gratuito serve tile radar fino a z7: oltre, Leaflet ingrandisce quelli (maxNativeZoom)
+      L.tileLayer(`${j.host}${past[past.length - 1].path}/256/{z}/{x}/{y}/2/1_1.png`,
+        { opacity: .7, maxZoom: 19, maxNativeZoom: 7, attribution: 'Radar © RainViewer' }).addTo(radarLayer);
+    }
+    // nuvole IR: RainViewer a volte non pubblica frame — la voce compare solo se ci sono
+    const ir = j.satellite && j.satellite.infrared;
+    if (ir && ir.length) {
+      cloudLayer.clearLayers();
+      L.tileLayer(`${j.host}${ir[ir.length - 1].path}/256/{z}/{x}/{y}/0/0_0.png`,
+        { opacity: .45, maxZoom: 19, maxNativeZoom: 5, attribution: 'Sat © RainViewer' }).addTo(cloudLayer);
+      if (!cloudInMenu) { layersCtl.addOverlay(cloudLayer, 'Nuvole IR (live)'); cloudInMenu = true; }
+    }
+  } catch (e) { /* offline o API giù: i layer restano semplicemente vuoti */ }
+}
+
+const layersCtl = L.control.layers(
   { 'Satellite': sat, 'Topografica': topo },
-  { 'Sentieri trekking': trails, 'Meteo 3 giorni': wxLayer, 'Rifugi e bivacchi': hutLayer, 'I miei punti': pinLayer },
+  { 'Sentieri trekking': trails, 'Meteo 3 giorni': wxLayer, 'Rifugi e bivacchi': hutLayer,
+    'Radar pioggia (live)': radarLayer, 'I miei punti': pinLayer },
   { position: 'topright' }
 ).addTo(map);
+let cloudInMenu = false;
+loadWxMaps();
+setInterval(loadWxMaps, 10 * 60 * 1000);
 
 // ponytail: Google satellite qui se serve — servono API key + billing + rispetto ToS.
 // const gsat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {maxZoom:20});
