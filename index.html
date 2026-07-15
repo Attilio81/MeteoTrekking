@@ -5439,7 +5439,11 @@ function marker(city, wx) {
 // --- refresh (debounced) ---
 let timer = null, reqId = 0, retryTimer = null, popupOpen = false;
 map.on('popupopen', () => { popupOpen = true; });
-map.on('popupclose', () => { popupOpen = false; });
+map.on('popupclose', () => {
+  popupOpen = false;
+  // riallinea i layer alla vista attuale (i render erano sospesi col popup aperto)
+  setTimeout(() => { if (!popupOpen) { renderHuts(); renderTrails(); } }, 100);
+});
 async function refresh() {
   clearTimeout(retryTimer);
   if (popupOpen) return;   // non ricostruire i marker mentre una card è aperta (evita che sparisca)
@@ -5603,6 +5607,7 @@ function hutMarker(h) {
 }
 const HUT_MINZOOM = 9;
 function renderHuts() {
+  if (popupOpen) return;   // non distruggere il marker col popup aperto (auto-pan mobile)
   if (!map.hasLayer(hutLayer)) return;
   hutLayer.clearLayers();
   if (map.getZoom() < HUT_MINZOOM) return;
@@ -5637,6 +5642,7 @@ function trailPopup(t) {
     + `<div class="tsrc">Fonte: OpenStreetMap</div></div>`;
 }
 function renderTrails() {
+  if (popupOpen) return;   // idem: il popup del sentiero deve sopravvivere all'auto-pan
   if (!map.hasLayer(trails)) return;
   trailLines.clearLayers();
   if (map.getZoom() < TRAIL_MINZOOM) return;
