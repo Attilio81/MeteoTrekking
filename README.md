@@ -21,6 +21,7 @@ Previsioni a 3 giorni sulle Alpi occidentali per pianificare escursioni: pioggia
 ### Montagna vera
 - **549 rifugi e bivacchi** (OSM) con quota: un clic e hai il meteo *in quota*, non quello del fondovalle.
 - **778 rotte principali cliccabili** — Alte Vie, GTA, GR, tour: nome, numero, lunghezza, difficoltà SAC. Più tutti i sentieri segnati come sfondo (Waymarked Trails).
+- **Soste camper 🚐** (OSM): aree sosta e parcheggi per camper/furgone, con meteo al clic. Layer spento di default, si attiva dal controllo layer. Utile per chi viaggia in libertà.
 - **Punti tuoi**: clicchi un punto qualsiasi (un colle, un lago, un bivacco non mappato) e il suo meteo resta sulla mappa, anche alla prossima visita.
 
 ### Per l'escursione
@@ -50,8 +51,21 @@ cd mcp && npm install     # richiede Node 18+
 | `cerca_localita` | Cerca comuni, rifugi e bivacchi per nome |
 | `rifugi_vicini` | Rifugi entro un raggio, ordinati per distanza, con quota |
 | `sentieri` | Rotte principali per nome o vicinanza a una località |
+| `soste_camper_vicine` | Aree sosta e parcheggi per camper (OSM) entro un raggio, ordinati per distanza |
 
 Prompt pronti (dal menu prompt del client): **pianifica-uscita-weekend** (zona → meteo del weekend, rifugi, rotte e raccomandazione secca), **meteo-rifugio** (conviene salire? quando?), **confronta-localita** (classifica tra più mete).
+
+### Domande di prova
+
+Da chiedere all'assistente per vedere il server all'opera:
+
+- *"Che meteo fa ad Alagna Valsesia nel weekend?"*
+- *"Pianifica un'uscita in Valsesia per sabato e domenica."*
+- *"Quali rifugi ci sono entro 10 km da Courmayeur?"*
+- *"Da Carcoforo, che gite si fanno con massimo 600 m di dislivello?"*
+- *"Conviene salire al Rifugio Gnifetti domani?"*
+- *"Confronta il meteo tra Alagna, Carcoforo e Macugnaga: dove vado?"*
+- *"Trovami la tappa GTA più vicina a Rima."*
 
 **Claude Code**: già registrato dal file [`.mcp.json`](.mcp.json) — apri Claude Code nella cartella del repo e approva il server.
 
@@ -70,9 +84,39 @@ Prompt pronti (dal menu prompt del client): **pianifica-uscita-weekend** (zona �
 
 Il server legge comuni, rifugi e rotte direttamente da `index.html` (fonte unica) e interroga Open-Meteo live. Trasporto stdio: gira in locale, nessun dato tuo esce dalla macchina.
 
+### Da cellulare (connettore remoto)
+
+L'app **Claude** su cellulare non avvia processi locali: accetta solo **connettori remoti** (MCP via HTTP). Per questo c'è una seconda variante — stessa identica logica (`mcp/mcp-core.mjs`), trasporto Streamable HTTP — deployabile gratis su Vercel:
+
+- entry HTTP: [`api/mcp.mjs`](api/mcp.mjs) (serverless, **stateless**, protetta da token)
+- config deploy: [`vercel.json`](vercel.json) + [`package.json`](package.json) di root
+
+**Deploy (gratis, piano Hobby):**
+
+```bash
+npm i -g vercel        # se non ce l'hai
+vercel                 # dalla root del repo: primo deploy
+vercel env add MCP_TOKEN    # incolla un token segreto a piacere (es. da `openssl rand -hex 24`)
+vercel --prod          # deploy definitivo
+```
+
+Ottieni un URL tipo `https://meteotrekking.vercel.app/api/mcp`. Poi su **claude.ai → Settings → Connectors → Add custom connector**: incolla l'URL e, come header, `Authorization: Bearer <il-tuo-MCP_TOKEN>`. Da lì è disponibile anche nell'app mobile.
+
+> ⚠️ Esposto in rete non vale più il "tutto in locale": la function **richiede** il token (`MCP_TOKEN`) e rifiuta le richieste senza. Il piano Hobby di Vercel è solo per uso **non commerciale**.
+
+Il sito statico (`index.html`) e la function coabitano nello stesso deploy: apri l'URL base per la mappa, `/api/mcp` per l'MCP.
+
 ## 🗺️ Copertura e dati
 
-**Piemonte, Valle d'Aosta, Liguria** e le Alpi francesi e svizzere limitrofe (bbox 43.3–46.6 N, 5.5–9.7 E). Comuni, rifugi e rotte sono incorporati nel file — estratti una volta, zero API a runtime oltre al meteo.
+**Piemonte, Valle d'Aosta, Liguria** e le Alpi francesi e svizzere limitrofe (bbox 43.3–46.6 N, 5.5–9.7 E). Comuni, rifugi, rotte e soste camper sono incorporati nel file — estratti una volta, zero API a runtime oltre al meteo.
+
+Le **soste camper** hanno uno script di rigenerazione da OpenStreetMap (le altre sorgenti sono state estratte a mano, una volta):
+
+```bash
+node scripts/extract-campers.mjs   # rilegge Overpass e riscrive il blocco CAMPERS in index.html
+```
+
+È idempotente (rieseguibile) e con guardia anti-lista-vuota: se Overpass restituisce molti meno punti del previsto, aborta senza scrivere. Adatto a una GitHub Action mensile, se in futuro si vuole automatizzarlo.
 
 | Dato | Fonte | Licenza/note |
 |---|---|---|
@@ -80,6 +124,7 @@ Il server legge comuni, rifugi e rotte direttamente da `index.html` (fonte unica
 | Radar pioggia | [RainViewer](https://www.rainviewer.com) | gratis, no key |
 | Comuni | [GeoNames](https://www.geonames.org) cities500 | CC-BY |
 | Rifugi, bivacchi, rotte | [OpenStreetMap](https://www.openstreetmap.org) | ODbL |
+| Soste camper | [OpenStreetMap](https://www.openstreetmap.org) (`tourism=caravan_site`, parcheggi camper) | ODbL |
 | Sentieri (tiles) | [Waymarked Trails](https://waymarkedtrails.org) | — |
 | Mappa | Esri World Imagery · [OpenTopoMap](https://opentopomap.org) | — |
 
