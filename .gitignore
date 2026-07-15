@@ -2,3 +2,5 @@
 *.jpeg
 *.png
 .playwright-mcp/
+node_modules/
+mcp/_test.mjs

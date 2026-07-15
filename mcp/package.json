@@ -1,0 +1,11 @@
+{
+  "name": "meteotrekking-mcp",
+  "version": "1.0.0",
+  "description": "MCP server: meteo trekking, rifugi e sentieri delle Alpi occidentali",
+  "type": "module",
+  "main": "server.mjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  }
+}

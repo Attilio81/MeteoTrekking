@@ -20,6 +20,18 @@ Meteo a 3 giorni sulle Alpi occidentali, direttamente sulla mappa satellitare. P
 - Rifugi, bivacchi, sentieri: [OpenStreetMap](https://www.openstreetmap.org) / [Waymarked Trails](https://waymarkedtrails.org)
 - Mappa: Esri World Imagery, OpenTopoMap
 
+## Server MCP
+
+Il repo include un server [MCP](https://modelcontextprotocol.io) che espone gli stessi dati dell'app a Claude e ad altri client AI: previsioni orientate al trekking (finestra asciutta, giorno migliore, rischio temporale), ricerca località, rifugi vicini, rotte principali.
+
+```bash
+cd mcp && npm install
+```
+
+Con Claude Code il server è già registrato dal file `.mcp.json` del progetto: apri Claude Code nella cartella del repo e chiedi ad esempio *"che meteo fa ad Alagna nei prossimi 3 giorni?"* o *"rifugi entro 8 km da Courmayeur"*.
+
+Tool disponibili: `previsioni` · `cerca_localita` · `rifugi_vicini` · `sentieri`.
+
 ## Copertura
 
 Piemonte, Valle d'Aosta, Liguria e Alpi francesi/svizzere limitrofe. L'elenco di comuni e rifugi è incorporato nel file (estratto una volta), così a runtime non serve nessuna API oltre al meteo.
