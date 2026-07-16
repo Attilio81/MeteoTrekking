@@ -24,6 +24,7 @@ from agno.tools.mcp import MCPTools
 from mcp import StdioServerParameters
 
 from model_factory import build_model
+from punti import PUNTI_TOOLS
 
 load_dotenv()
 
@@ -125,6 +126,11 @@ Memoria (importante):
 - All'inizio di una risposta tieni conto di ciò che ricordi: se la memoria integra un tool
   (es. una sosta camper che i tool non elencano), usala e dillo ("da quanto mi risulta…").
 - Non memorizzare meteo o dati volatili: solo fatti stabili (luoghi, servizi, aperture, correzioni).
+- PUNTI CUSTOM (SQLite overlay): oltre alla memoria in prosa, hai `aggiungi_punto`/`punti_vicini`/
+  `elimina_punto` per i punti GEO che mancano/correggono la base OSM. Quando trovi (web o utente)
+  un luogo con coordinate non presente nei tool fissi — es. l'area camper "Le Giare" a Carcoforo —
+  chiama `aggiungi_punto`. Quando elenchi rifugi/soste vicino a una località, chiama ANCHE
+  `punti_vicini` (stesse coordinate) e integra i risultati, segnalandoli come "aggiunti".
 
 Regole:
 - DISTANZE: i tool NON danno distanze a piedi e NON esiste più la linea d'aria (fuorviante in
@@ -155,7 +161,7 @@ agent = Agent(
     id="meteotrekking-agent",
     model=build_model(),
     db=SqliteDb(db_file="session.db"),
-    tools=[mcp_tools, web_search, web_extract, componi_trekking],
+    tools=[mcp_tools, web_search, web_extract, componi_trekking, *PUNTI_TOOLS],
     tool_call_limit=12,   # anti-loop; il flusso trekking usa sentieri+search+extract+componi
     instructions=INSTRUCTIONS,
     add_history_to_context=True,

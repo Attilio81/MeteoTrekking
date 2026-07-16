@@ -5,5 +5,6 @@ __pycache__/
 *.pyc
 .env
 session.db
+punti.db
 frontend/public/map.html
 frontend/next-env.d.ts
