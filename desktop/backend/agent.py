@@ -17,8 +17,9 @@ from agno.agent import Agent
 from agno.db.sqlite import SqliteDb
 from agno.os import AgentOS
 from agno.os.interfaces.agui import AGUI
+import httpx
+from agno.tools import tool
 from agno.tools.mcp import MCPTools
-from agno.tools.duckduckgo import DuckDuckGoTools
 from mcp import StdioServerParameters
 
 from model_factory import build_model
@@ -34,6 +35,35 @@ mcp_tools = MCPTools(
     timeout_seconds=30,
 )
 
+# ricerca web via Tavily (REST diretta: nessuna dipendenza extra). Key: https://tavily.com
+# (env TAVILY_API_KEY). Senza key ritorna un messaggio chiaro invece di fallire.
+@tool(name="web_search",
+      description="Cerca sul web (Tavily). Usa SOLO per ciò che gli altri tool non danno: "
+                  "punto di partenza/imbocco sentiero, come arrivare, tempi e dislivello reali, "
+                  "condizioni recenti, orari/apertura rifugio. Non per meteo/rifugi/sentieri/allerte.")
+def web_search(query: str) -> str:
+    key = os.environ.get("TAVILY_API_KEY")
+    if not key:
+        return "Ricerca web non configurata (manca TAVILY_API_KEY). Dillo all'utente."
+    try:
+        r = httpx.post(
+            "https://api.tavily.com/search",
+            json={"api_key": key, "query": query, "max_results": 5, "search_depth": "basic"},
+            timeout=20,
+        )
+    except Exception as e:
+        return f"Errore di rete nella ricerca: {e}"
+    if r.status_code != 200:
+        return f"Ricerca fallita (HTTP {r.status_code}). Non ritentare all'infinito."
+    data = r.json()
+    items = (data.get("results") or [])[:5]
+    if not items:
+        return "Nessun risultato dalla ricerca web."
+    head = f"[Sintesi] {data['answer']}\n\n" if data.get("answer") else ""
+    return head + "\n\n".join(
+        f"{it.get('title', '')}\n{it.get('url', '')}\n{it.get('content', '')}" for it in items
+    )
+
 INSTRUCTIONS = """\
 Sei l'assistente MeteoTrekking per le Alpi occidentali (Piemonte, Valle d'Aosta, Liguria
 e Alpi francesi/svizzere limitrofe). Aiuti a pianificare escursioni con dati veri.
@@ -47,7 +77,7 @@ Hai questi tool (usali, non inventare):
 - `soste_camper_vicine`: aree sosta/parcheggi camper (OSM) — utile per chi va in furgone.
 - `allerte_meteo`: allerte ufficiali Meteoalarm (IT/FR/CH). Filtra tu per la regione della
   località (es. Alagna → Piemonte).
-- `duckduckgo_search`: ricerca web. Usalo SOLO per ciò che i tool sopra non danno:
+- `web_search`: ricerca web. Usalo SOLO per ciò che i tool sopra non danno:
   punto di partenza / imbocco del sentiero, come arrivare (auto, parcheggio, bus),
   tempo di percorrenza e dislivello, condizioni recenti, orari/apertura del rifugio.
   Cita sempre la fonte e diffida di info non ufficiali (preferisci CAI, siti dei rifugi,
@@ -60,7 +90,7 @@ Regole:
 - ATTENZIONE alla distanza dei rifugi: `rifugi_vicini` dà la distanza in LINEA D'ARIA dal
   punto cercato, non il cammino reale né il dislivello. Quando l'utente chiede "quanto
   cammino / da dove si parte / quanto dislivello", dillo chiaramente e usa
-  `duckduckgo_search` per il punto di partenza e i tempi reali.
+  `web_search` per il punto di partenza e i tempi reali.
 - Per "che tempo fa / conviene salire / quando esco" usa SEMPRE `previsioni`.
 - Prima di consigliare una gita, controlla il rischio temporale e le raffiche: in quota vento
   > ~40 km/h o temporale = sconsiglia con chiarezza, non addolcire.
@@ -76,7 +106,7 @@ agent = Agent(
     id="meteotrekking-agent",
     model=build_model(),
     db=SqliteDb(db_file="session.db"),
-    tools=[mcp_tools, DuckDuckGoTools(fixed_max_results=5)],
+    tools=[mcp_tools, web_search],
     tool_call_limit=10,   # anti-loop: DeepSeek altrimenti ripete la web search all'infinito
     instructions=INSTRUCTIONS,
     add_history_to_context=True,
