@@ -1,12 +1,27 @@
 "use client";
 
-// La mappa MeteoTrekking (index.html del repo, copiato in public/map.html a build/dev)
-// incorporata in un iframe a tutto schermo. Fase 1: mappa interattiva indipendente,
-// la chat risponde a fianco. Fase 2 (futuro): l'agente pilota la mappa via postMessage.
+import { useCanvas } from "@/lib/canvasStore";
+import { CanvasBody } from "./CanvasViews";
+
+// Canvas principale: la mappa (index.html in iframe) resta sempre montata (stato
+// preservato); quando l'agente produce un elenco/previsione, un pannello la copre
+// con il componente generato. "← Mappa" torna alla mappa.
 export function MapCanvas() {
+  const { view, clear } = useCanvas();
   return (
     <main className="stage">
-      <iframe className="map-frame" src="/map.html" title="Mappa MeteoTrekking" />
+      {view && (
+        <div className="canvas-panel">
+          <button className="canvas-back" onClick={clear}>← Mappa</button>
+          <CanvasBody view={view} />
+        </div>
+      )}
+      <iframe
+        className="map-frame"
+        src="/map.html"
+        title="Mappa MeteoTrekking"
+        style={{ display: view ? "none" : "block" }}
+      />
     </main>
   );
 }
