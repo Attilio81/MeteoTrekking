@@ -2,7 +2,26 @@
 html, body { margin: 0; padding: 0; height: 100%; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-.stage { position: fixed; inset: 0; }
+/* La chat CopilotKit (.copilotKitWindow) è un pannello fisso di 448px a destra.
+   Lascio quello spazio alla mappa così i control Leaflet (layers/zoom, top-right)
+   non finiscono coperti dalla chat. */
+.stage { position: fixed; top: 0; left: 0; bottom: 0; right: 448px; }
 .map-frame { width: 100%; height: 100%; border: 0; display: block; }
 
-/* la chat CopilotSidebar resta pannello affiancato a destra */
+/* Chip compatto per le chiamate tool (render custom in CopilotConfig) al posto
+   del riquadro default. */
+.toolchip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; margin: 4px 0;
+  border-radius: 999px; font-size: 12px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  border: 1px solid #d9e0dd; background: #eef2f1; color: #2f7d76;
+  width: fit-content;
+}
+.toolchip .tc-ic { font-size: 11px; }
+.toolchip.run { opacity: .75; }
+.toolchip.done .tc-ic { color: #2f8f4e; }
+
+@media (prefers-color-scheme: dark) {
+  .toolchip { border-color: #2c3835; background: #1a2320; color: #5fb8ae; }
+}

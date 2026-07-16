@@ -5,6 +5,7 @@ import { CopilotKit } from "@copilotkit/react-core";
 import { CopilotSidebar } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { MapCanvas } from "@/components/MapCanvas";
+import { CopilotConfig } from "@/components/CopilotConfig";
 
 export default function Page() {
   // threadId nuovo a ogni caricamento = sessione backend pulita.
@@ -18,6 +19,7 @@ export default function Page() {
 
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" agent="my_agent" threadId={threadId} showDevConsole={false}>
+      <CopilotConfig />
       <MapCanvas />
       {mounted && (
         <CopilotSidebar
