@@ -7471,6 +7471,25 @@ map.on('moveend', () => { saveView(); scheduleRefresh(); renderHuts(); renderCam
 map.on('overlayadd', () => { scheduleRefresh(); renderHuts(); renderCampers(); renderTrails(); updateHint(); });
 map.on('overlayremove', updateHint);
 
+// Pilotaggio da host (app desktop): messaggi postMessage per volare e mettere pin.
+// { source:'meteotrekking-app', center:{lat,lon,zoom?}, points:[{lat,lon,label}] }
+let agentLayer = null;
+window.addEventListener('message', (e) => {
+  const d = e.data || {};
+  if (d.source !== 'meteotrekking-app') return;
+  map.invalidateSize();
+  if (!agentLayer) agentLayer = L.layerGroup().addTo(map);
+  agentLayer.clearLayers();
+  const pts = Array.isArray(d.points) ? d.points.filter(p => typeof p.lat === 'number' && typeof p.lon === 'number') : [];
+  for (const p of pts) {
+    const icon = L.divIcon({ html: '<div class="hut">📍</div>', className: '', iconSize: [24, 24], iconAnchor: [12, 12] });
+    L.marker([p.lat, p.lon], { icon }).addTo(agentLayer).bindPopup(p.label || '');
+  }
+  if (pts.length > 1) map.fitBounds(L.latLngBounds(pts.map(p => [p.lat, p.lon])).pad(0.3));
+  else if (pts.length === 1) map.setView([pts[0].lat, pts[0].lon], (d.center && d.center.zoom) || 13);
+  else if (d.center) map.setView([d.center.lat, d.center.lon], d.center.zoom || 12);
+});
+
 // PWA: service worker per avvio offline/istantaneo (solo via http/https, non file://)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http'))
   navigator.serviceWorker.register('sw.js').catch(() => {});
