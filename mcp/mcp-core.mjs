@@ -137,6 +137,42 @@ async function forecast(lat, lon, giorni) {
   return { giorni: days, giorno_migliore: days[bi].data, quota_modello_m: wx.elevation, fonte: 'Open-Meteo' };
 }
 
+// ---------- allerte meteo (Meteoalarm, feed CAP/JSON gratis, no key) ----------
+const ALERT_FEED = { italia: 'feeds-italy', francia: 'feeds-france', svizzera: 'feeds-switzerland' };
+const AW_LEVEL = { 1: 'verde', 2: 'giallo', 3: 'arancione', 4: 'rosso' };
+const AW_TYPE = {
+  1: 'vento', 2: 'neve/ghiaccio', 3: 'temporale', 4: 'nebbia', 5: 'caldo estremo', 6: 'freddo estremo',
+  7: 'mareggiata', 8: 'incendi boschivi', 9: 'valanghe', 10: 'pioggia', 11: 'piena', 12: 'pioggia/piena', 13: 'gelo'
+};
+const paramVal = (params, name) => (params || []).find(x => x.valueName === name)?.value || '';
+
+async function allerteCountry(paese) {
+  const r = await fetch(`https://feeds.meteoalarm.org/api/v1/warnings/${ALERT_FEED[paese]}`,
+    { headers: { 'User-Agent': 'MeteoTrekking/1.0 (github)' } });
+  if (!r.ok) throw new Error(`Meteoalarm ${paese} ${r.status}`);
+  const { warnings = [] } = await r.json();
+  const langPref = paese === 'francia' ? 'fr' : paese === 'svizzera' ? 'de' : 'it';
+  const out = [];
+  for (const w of warnings) {
+    const infos = w.alert?.info || [];
+    if (!infos.length) continue;
+    const info = infos[0];
+    const lvl = +paramVal(info.parameter, 'awareness_level').split(';')[0].trim();
+    if (!lvl || lvl <= 1) continue; // salta "verde"/nessuna allerta
+    const type = +paramVal(info.parameter, 'awareness_type').split(';')[0].trim();
+    const loc = infos.find(i => (i.language || '').toLowerCase().startsWith(langPref)) || info;
+    for (const a of (info.area || [])) {
+      out.push({
+        paese, area: a.areaDesc, evento: info.event,
+        livello: AW_LEVEL[lvl] || String(lvl), tipo: AW_TYPE[type] || undefined,
+        dalle: info.onset || info.effective, alle: info.expires,
+        dettaglio: (loc.description || '').split('\n')[0].trim().slice(0, 300) || undefined
+      });
+    }
+  }
+  return out;
+}
+
 const asText = o => ({ content: [{ type: 'text', text: JSON.stringify(o, null, 2) }] });
 const asError = msg => ({ content: [{ type: 'text', text: JSON.stringify({ errore: msg }) }], isError: true });
 
@@ -287,6 +323,29 @@ export function createServer() {
         .map(c => ({ nome: c.name, tipo: c.type, quota_m: c.ele || undefined, distanza_km: c.distanza_km, lat: c.lat, lon: c.lon }));
       return found.length ? asText({ da: { lat, lon }, raggio_km, soste_camper: found })
         : asError(`Nessuna sosta camper mappata entro ${raggio_km} km`);
+    }
+  );
+
+  server.tool(
+    'allerte_meteo',
+    'Allerte meteo ufficiali (Meteoalarm) per Italia, Francia e Svizzera: temporali, vento, pioggia, neve, '
+    + 'caldo/freddo estremo, valanghe. Per ogni allerta: area (regione/dipartimento), livello (giallo/arancione/rosso), '
+    + 'tipo, finestra temporale e dettaglio. Se non specifichi il paese, interroga tutti e tre (bbox Alpi occ.): '
+    + 'filtra tu per la regione della località (es. Piemonte, Valle d\'Aosta, Hautes-Alpes, Valais).',
+    {
+      paese: z.enum(['italia', 'francia', 'svizzera']).optional().describe('Limita a un paese; se omesso interroga tutti e tre')
+    },
+    async ({ paese }) => {
+      const paesi = paese ? [paese] : ['italia', 'francia', 'svizzera'];
+      const settled = await Promise.all(paesi.map(p => allerteCountry(p).then(a => ({ a })).catch(e => ({ err: `${p}: ${e.message}` }))));
+      const allerte = settled.flatMap(s => s.a || []);
+      const errori = settled.filter(s => s.err).map(s => s.err);
+      const rank = { rosso: 4, arancione: 3, giallo: 2 };
+      allerte.sort((a, b) => (rank[b.livello] || 0) - (rank[a.livello] || 0));
+      if (!allerte.length) {
+        return asText({ allerte: [], nota: `Nessuna allerta attiva (livello ≥ giallo) per: ${paesi.join(', ')}`, fonte: 'Meteoalarm', ...(errori.length ? { errori } : {}) });
+      }
+      return asText({ allerte, totale: allerte.length, fonte: 'Meteoalarm', ...(errori.length ? { errori } : {}) });
     }
   );
 

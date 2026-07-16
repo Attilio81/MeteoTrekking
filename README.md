@@ -52,6 +52,7 @@ cd mcp && npm install     # richiede Node 18+
 | `rifugi_vicini` | Rifugi entro un raggio, ordinati per distanza, con quota |
 | `sentieri` | Rotte principali per nome o vicinanza a una località |
 | `soste_camper_vicine` | Aree sosta e parcheggi per camper (OSM) entro un raggio, ordinati per distanza |
+| `allerte_meteo` | Allerte ufficiali (Meteoalarm) per Italia/Francia/Svizzera: temporali, vento, pioggia, neve, caldo, valanghe — livello, area, finestra |
 
 Prompt pronti (dal menu prompt del client): **pianifica-uscita-weekend** (zona → meteo del weekend, rifugi, rotte e raccomandazione secca), **meteo-rifugio** (conviene salire? quando?), **confronta-localita** (classifica tra più mete).
 
@@ -66,6 +67,8 @@ Da chiedere all'assistente per vedere il server all'opera:
 - *"Conviene salire al Rifugio Gnifetti domani?"*
 - *"Confronta il meteo tra Alagna, Carcoforo e Macugnaga: dove vado?"*
 - *"Trovami la tappa GTA più vicina a Rima."*
+- *"Ci sono allerte meteo in Piemonte oggi?"*
+- *"Aree sosta camper entro 20 km da Carcoforo."*
 
 **Claude Code**: già registrato dal file [`.mcp.json`](.mcp.json) — apri Claude Code nella cartella del repo e approva il server.
 
@@ -122,6 +125,7 @@ node scripts/extract-campers.mjs   # rilegge Overpass e riscrive il blocco CAMPE
 |---|---|---|
 | Previsioni | [Open-Meteo](https://open-meteo.com) | gratis, multi-modello (ICON/ECMWF), no key |
 | Radar pioggia | [RainViewer](https://www.rainviewer.com) | gratis, no key |
+| Allerte meteo | [Meteoalarm](https://www.meteoalarm.org) (EUMETNET) | gratis, no key — solo lato MCP/server |
 | Comuni | [GeoNames](https://www.geonames.org) cities500 | CC-BY |
 | Rifugi, bivacchi, rotte | [OpenStreetMap](https://www.openstreetmap.org) | ODbL |
 | Soste camper | [OpenStreetMap](https://www.openstreetmap.org) (`tourism=caravan_site`, parcheggi camper) | ODbL |
