@@ -24,7 +24,6 @@ from agno.tools.mcp import MCPTools
 from mcp import StdioServerParameters
 
 from model_factory import build_model
-from punti import PUNTI_TOOLS
 
 load_dotenv()
 
@@ -136,16 +135,23 @@ Regole:
 - DISTANZE: i tool NON danno distanze a piedi e NON esiste più la linea d'aria (fuorviante in
   montagna). Le metriche vere sono DISLIVELLO, TEMPO di percorrenza, DIFFICOLTÀ, lunghezza della
   rotta. Per queste usa `web_search` (schede CAI/portali). Non inventare km né tempi.
-- "I TREKKING/ESCURSIONI MIGLIORI VICINO A X" (o "cosa cammino da X", "gite da X"): produci un
-  ELENCO CORPOSO stile Komoot, con dati REALI e ZERO invenzione. Procedi così:
-  1. `sentieri` (localita=X) per le rotte segnate (nome, numero, difficoltà, lunghezza);
-  2. `web_search` "migliori escursioni / trekking da X + valle" per trovare le pagine giuste;
-  3. `web_extract` sulle 2-3 pagine più promettenti (portali escursionistici/CAI) per LEGGERE i
-     dati veri: dislivello, tempo, difficoltà, punto di partenza, meta;
-  4. chiama `componi_trekking(gite=[...])` con 4-6 itinerari compilati SOLO con ciò che hai
-     letto. Ogni gita: nome, meta, dislivello_m, tempo, difficolta, partenza, perche, fonte(URL).
-     Se un dato non c'è nella fonte, lascialo vuoto — NON inventarlo.
-  Nel messaggio di chat aggiungi 1-2 righe di sintesi e le fonti. Le schede compaiono nel canvas.
+- RICHIESTE DI ITINERARI a piedi da una località X — qualsiasi forma: "trekking/escursioni migliori
+  vicino a X", "vorrei fare un trekking/una gita/un'escursione da X", "cosa cammino da X", "gite da X",
+  "consigliami una gita/un giro", ANCHE con vincoli (dislivello ~N m, difficoltà, durata, ad anello).
+  Produci un ELENCO CORPOSO stile Komoot, dati REALI, ZERO invenzione. NON partire dal meteo (offrilo
+  solo dopo, se serve). Procedi SEMPRE così, fino in fondo:
+  1. `sentieri` (localita=X) per le rotte segnate;
+  2. `web_search` "escursioni/trekking da X + valle" (aggiungi il vincolo, es. "500 m dislivello");
+  3. `web_extract` su 2-3 pagine (portali escursionistici/CAI) per LEGGERE dislivello, tempo,
+     difficoltà, partenza, meta reali;
+  4. chiama SEMPRE `componi_trekking(gite=[...])` con 4-6 itinerari da ciò che hai letto.
+     Ogni gita: nome, meta, dislivello_m, tempo, difficolta, partenza, perche, fonte(URL).
+     Campo vuoto se non trovato, MAI inventato.
+  Se c'è un VINCOLO (es. 500-600 m di dislivello): seleziona e ORDINA gli itinerari che lo rispettano,
+  scarta quelli fuori range e dillo.
+  VIETATO elencare gli itinerari come testo nella chat: l'elenco DEVE passare da `componi_trekking`
+  (che li mostra come schede nel canvas). In chat scrivi SOLO 1-2 righe di sintesi + le fonti.
+  `componi_trekking` è l'ULTIMO passo e non va mai saltato.
 - Per "che tempo fa / conviene salire / quando esco" usa SEMPRE `previsioni`.
 - Prima di consigliare una gita, controlla il rischio temporale e le raffiche: in quota vento
   > ~40 km/h o temporale = sconsiglia con chiarezza, non addolcire.
@@ -161,8 +167,8 @@ agent = Agent(
     id="meteotrekking-agent",
     model=build_model(),
     db=SqliteDb(db_file="session.db"),
-    tools=[mcp_tools, web_search, web_extract, componi_trekking, *PUNTI_TOOLS],
-    tool_call_limit=12,   # anti-loop; il flusso trekking usa sentieri+search+extract+componi
+    tools=[mcp_tools, web_search, web_extract, componi_trekking],
+    tool_call_limit=15,   # anti-loop; il flusso trekking usa sentieri+search+extract+componi
     instructions=INSTRUCTIONS,
     add_history_to_context=True,
     num_history_runs=4,

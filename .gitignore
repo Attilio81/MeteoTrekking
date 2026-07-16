@@ -5,3 +5,8 @@
 .playwright-mcp/
 node_modules/
 mcp/_test.mjs
+
+# overlay DB (runtime, non versionato)
+mcp/punti.db
+mcp/*.db-wal
+mcp/*.db-shm

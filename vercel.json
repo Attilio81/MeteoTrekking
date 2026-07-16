@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/mcp.mjs": { "includeFiles": "index.html" }
+    "api/mcp.mjs": { "includeFiles": "mcp/data.db" }
   }
 }

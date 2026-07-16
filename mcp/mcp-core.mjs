@@ -1,39 +1,34 @@
 // MeteoTrekking — core condiviso: dati + tool + prompt.
 // Usato sia dall'entry stdio (server.mjs) sia da quella HTTP (../api/mcp.mjs).
-// I dati (comuni GeoNames, rifugi OSM, rotte OSM) vengono estratti da index.html: fonte unica.
+// I dati stanno in data.db (SQLite), generato da index.html con scripts/build-db.mjs.
+// La tabella `punti` è l'overlay editabile (aggiunte/correzioni alla base OSM).
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { readFileSync, existsSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-// ---------- dati dall'app ----------
-// index.html può stare accanto (repo) o nella cwd della function (Vercel includeFiles): provo i candidati.
-function readIndexHtml() {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const candidates = [join(here, '..', 'index.html'), join(process.cwd(), 'index.html'), join(here, 'index.html')];
-  const hit = candidates.find(existsSync);
-  if (!hit) throw new Error(`index.html non trovato (cercato: ${candidates.join(', ')})`);
-  return readFileSync(hit, 'utf8');
-}
-const html = readIndexHtml();
+// ---------- dati da SQLite ----------
+const here = dirname(fileURLToPath(import.meta.url));
+const DB_PATH = [join(here, 'data.db'), join(process.cwd(), 'data.db')].find(existsSync)
+  || join(here, 'data.db');
+const db = new DatabaseSync(DB_PATH);
+// overlay editabile: DB separato (mutabile a runtime, non versionato)
+const pdb = new DatabaseSync(join(here, 'punti.db'));
+pdb.exec(`CREATE TABLE IF NOT EXISTS punti (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, tipo TEXT,
+  lat REAL NOT NULL, lon REAL NOT NULL, quota_m INTEGER, note TEXT, fonte TEXT,
+  creato TEXT DEFAULT (datetime('now')))`);
 
-function extractArray(name) {
-  const start = html.indexOf(`const ${name} = [`);
-  if (start < 0) throw new Error(`array ${name} non trovato in index.html`);
-  const open = html.indexOf('[', start);
-  let depth = 0, end = open;
-  for (let i = open; i < html.length; i++) {
-    if (html[i] === '[') depth++;
-    else if (html[i] === ']') { depth--; if (depth === 0) { end = i; break; } }
-  }
-  return JSON.parse(html.slice(open, end + 1).replace(/,\s*\]$/, ']'));
-}
-
-const TOWNS = extractArray('TOWNS').map(t => ({ name: t[0], lat: t[1], lon: t[2], pop: t[3] }));
-const HUTS = extractArray('HUTS').map(h => ({ name: h[0], lat: h[1], lon: h[2], ele: h[3], type: h[4] === 'w' ? 'bivacco' : 'rifugio' }));
-const TRAILS = extractArray('TRAILS'); // {r,n,net,d,sac,c,p:[[lat,lon]..]}
-const CAMPERS = extractArray('CAMPERS').map(c => ({ name: c[0], lat: c[1], lon: c[2], ele: c[3], type: c[4] === 'p' ? 'parcheggio camper' : 'area sosta camper' }));
+// caricati in memoria una volta (i filtri per vicinanza girano sugli array, come prima)
+const TOWNS = db.prepare('SELECT nome AS name, lat, lon, pop FROM comuni').all();
+const HUTS = db.prepare('SELECT nome AS name, lat, lon, ele, tipo FROM rifugi').all()
+  .map(h => ({ name: h.name, lat: h.lat, lon: h.lon, ele: h.ele, type: h.tipo === 'w' ? 'bivacco' : 'rifugio' }));
+const TRAILS = db.prepare('SELECT ref AS r, nome AS n, net, dist AS d, sac, colore AS c, punti FROM rotte').all()
+  .map(t => ({ r: t.r, n: t.n, net: t.net, d: t.d, sac: t.sac, c: t.c, p: JSON.parse(t.punti || '[]') }));
+const CAMPERS = db.prepare('SELECT nome AS name, lat, lon, ele, tipo FROM soste').all()
+  .map(c => ({ name: c.name, lat: c.lat, lon: c.lon, ele: c.ele, type: c.tipo === 'p' ? 'parcheggio camper' : 'area sosta camper' }));
 export const stats = { comuni: TOWNS.length, rifugi: HUTS.length, rotte: TRAILS.length, soste_camper: CAMPERS.length };
 
 // ---------- utilità ----------
@@ -348,6 +343,58 @@ export function createServer() {
         return asText({ allerte: [], nota: `Nessuna allerta attiva (livello ≥ giallo) per: ${paesi.join(', ')}`, fonte: 'Meteoalarm', ...(errori.length ? { errori } : {}) });
       }
       return asText({ allerte, totale: allerte.length, fonte: 'Meteoalarm', ...(errori.length ? { errori } : {}) });
+    }
+  );
+
+  // ---------- overlay punti (SQLite, editabile) ----------
+  server.tool(
+    'aggiungi_punto',
+    'Salva un punto NON presente nei dati fissi (area camper, sorgente, rifugio/accesso non '
+    + 'mappato, correzione) scoperto dal web o indicato dall\'utente. Prima verifica con punti_vicini '
+    + 'di non duplicare. tipo: rifugio/bivacco/sosta_camper/parcheggio/acqua/punto.',
+    {
+      nome: z.string(), lat: z.number(), lon: z.number(),
+      tipo: z.string().default('punto'),
+      quota_m: z.number().int().optional(), note: z.string().optional(), fonte: z.string().optional()
+    },
+    async ({ nome, lat, lon, tipo, quota_m, note, fonte }) => {
+      const r = pdb.prepare('INSERT INTO punti(nome,tipo,lat,lon,quota_m,note,fonte) VALUES(?,?,?,?,?,?,?)')
+        .run(nome, tipo, lat, lon, quota_m ?? null, note ?? null, fonte ?? null);
+      return asText({ ok: true, id: Number(r.lastInsertRowid), nome });
+    }
+  );
+
+  server.tool(
+    'punti_vicini',
+    'Elenca i punti CUSTOM salvati (overlay che integra/corregge la base OSM) entro un raggio da '
+    + 'una località o coordinate. Usalo INSIEME a rifugi_vicini/soste_camper_vicine per non perdere '
+    + 'ciò che è stato salvato prima.',
+    {
+      localita: z.string().optional(), lat: z.number().optional(), lon: z.number().optional(),
+      raggio_km: z.number().min(1).max(50).default(20)
+    },
+    async ({ localita, lat, lon, raggio_km }) => {
+      if (localita) {
+        const { match } = resolvePlace(localita);
+        if (!match) return asError(`Località "${localita}" non trovata`);
+        lat = match.lat; lon = match.lon;
+      }
+      if (lat == null || lon == null) return asError('Serve localita oppure lat+lon');
+      const here2 = { lat, lon };
+      const punti = pdb.prepare('SELECT id,nome,tipo,lat,lon,quota_m,note,fonte FROM punti').all()
+        .filter(p => haversineKm(here2, p) <= raggio_km)
+        .map(p => ({ id: p.id, nome: p.nome, tipo: p.tipo, quota_m: p.quota_m || undefined, note: p.note || undefined, fonte: p.fonte || undefined, lat: p.lat, lon: p.lon }));
+      return asText({ da: { lat, lon }, raggio_km, punti });
+    }
+  );
+
+  server.tool(
+    'elimina_punto',
+    'Elimina un punto custom per id (trovalo con punti_vicini).',
+    { id: z.number().int() },
+    async ({ id }) => {
+      const r = pdb.prepare('DELETE FROM punti WHERE id=?').run(id);
+      return asText({ ok: r.changes > 0, id });
     }
   );
 
