@@ -18,6 +18,7 @@ from agno.db.sqlite import SqliteDb
 from agno.os import AgentOS
 from agno.os.interfaces.agui import AGUI
 from agno.tools.mcp import MCPTools
+from agno.tools.duckduckgo import DuckDuckGoTools
 from mcp import StdioServerParameters
 
 from model_factory import build_model
@@ -46,8 +47,20 @@ Hai questi tool (usali, non inventare):
 - `soste_camper_vicine`: aree sosta/parcheggi camper (OSM) — utile per chi va in furgone.
 - `allerte_meteo`: allerte ufficiali Meteoalarm (IT/FR/CH). Filtra tu per la regione della
   località (es. Alagna → Piemonte).
+- `duckduckgo_search`: ricerca web. Usalo SOLO per ciò che i tool sopra non danno:
+  punto di partenza / imbocco del sentiero, come arrivare (auto, parcheggio, bus),
+  tempo di percorrenza e dislivello, condizioni recenti, orari/apertura del rifugio.
+  Cita sempre la fonte e diffida di info non ufficiali (preferisci CAI, siti dei rifugi,
+  portali escursionistici noti). NON usarlo per meteo, rifugi, sentieri o allerte: per
+  quelli i tool dedicati sono la verità. Fai al MASSIMO 2 ricerche web per domanda: se
+  non trovi risultati, NON ripetere la ricerca all'infinito — di' che non hai trovato
+  informazioni affidabili e fermati.
 
 Regole:
+- ATTENZIONE alla distanza dei rifugi: `rifugi_vicini` dà la distanza in LINEA D'ARIA dal
+  punto cercato, non il cammino reale né il dislivello. Quando l'utente chiede "quanto
+  cammino / da dove si parte / quanto dislivello", dillo chiaramente e usa
+  `duckduckgo_search` per il punto di partenza e i tempi reali.
 - Per "che tempo fa / conviene salire / quando esco" usa SEMPRE `previsioni`.
 - Prima di consigliare una gita, controlla il rischio temporale e le raffiche: in quota vento
   > ~40 km/h o temporale = sconsiglia con chiarezza, non addolcire.
@@ -63,7 +76,8 @@ agent = Agent(
     id="meteotrekking-agent",
     model=build_model(),
     db=SqliteDb(db_file="session.db"),
-    tools=[mcp_tools],
+    tools=[mcp_tools, DuckDuckGoTools(fixed_max_results=5)],
+    tool_call_limit=10,   # anti-loop: DeepSeek altrimenti ripete la web search all'infinito
     instructions=INSTRUCTIONS,
     add_history_to_context=True,
     num_history_runs=4,
