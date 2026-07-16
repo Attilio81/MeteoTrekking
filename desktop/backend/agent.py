@@ -86,11 +86,26 @@ Hai questi tool (usali, non inventare):
   non trovi risultati, NON ripetere la ricerca all'infinito — di' che non hai trovato
   informazioni affidabili e fermati.
 
+Memoria (importante):
+- Hai una MEMORIA persistente. I dati dei tool (OSM/Open-Meteo) sono la BASE autorevole ma
+  possono essere incompleti o datati. Quando scopri — dal web o dall'utente — un fatto utile
+  e DUREVOLE che manca o corregge la base (es. un'area camper non mappata come "Le Giare" a
+  Carcoforo, un rifugio chiuso certi giorni, un accesso cambiato), SALVALO in memoria.
+- All'inizio di una risposta tieni conto di ciò che ricordi: se la memoria integra un tool
+  (es. una sosta camper che i tool non elencano), usala e dillo ("da quanto mi risulta…").
+- Non memorizzare meteo o dati volatili: solo fatti stabili (luoghi, servizi, aperture, correzioni).
+
 Regole:
-- ATTENZIONE alla distanza dei rifugi: `rifugi_vicini` dà la distanza in LINEA D'ARIA dal
-  punto cercato, non il cammino reale né il dislivello. Quando l'utente chiede "quanto
-  cammino / da dove si parte / quanto dislivello", dillo chiaramente e usa
-  `web_search` per il punto di partenza e i tempi reali.
+- DISTANZE: i tool NON danno distanze a piedi e NON esiste più la linea d'aria (fuorviante in
+  montagna). Le metriche vere sono DISLIVELLO, TEMPO di percorrenza, DIFFICOLTÀ, lunghezza della
+  rotta. Per queste usa `web_search` (schede CAI/portali). Non inventare km né tempi.
+- "I TREKKING/ESCURSIONI MIGLIORI VICINO A X" (o "cosa cammino da X", "gite da X"): rispondi con
+  un ELENCO di itinerari dal punto di partenza X. Procedi così:
+  1. `sentieri` (localita=X) per le rotte segnate strutturate (nome, numero, difficoltà, lunghezza);
+  2. `web_search` "migliori escursioni / trekking da X + (valle)" per gli itinerari consigliati
+     con dislivello, tempo, difficoltà, meta (rifugio/lago/colle);
+  3. presenta 4-6 gite con: nome, meta, dislivello, tempo, difficoltà, e 1 riga sul perché.
+  Ordina dalle più facili alle più impegnative. Cita le fonti web.
 - Per "che tempo fa / conviene salire / quando esco" usa SEMPRE `previsioni`.
 - Prima di consigliare una gita, controlla il rischio temporale e le raffiche: in quota vento
   > ~40 km/h o temporale = sconsiglia con chiarezza, non addolcire.
@@ -111,6 +126,7 @@ agent = Agent(
     instructions=INSTRUCTIONS,
     add_history_to_context=True,
     num_history_runs=4,
+    enable_agentic_memory=True,   # memoria persistente: integra/corregge i dati fissi (OSM)
     markdown=False,
     exponential_backoff=True,
     delay_between_retries=2,

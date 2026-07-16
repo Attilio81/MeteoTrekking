@@ -245,13 +245,15 @@ export function createServer() {
       }
       if (lat == null || lon == null) return asError('Serve localita oppure lat+lon');
       const here = { lat, lon };
+      // la distanza in linea d'aria serve SOLO come filtro/ordinamento interno: in montagna
+      // è fuorviante, quindi non viene restituita. Per cammino/dislivello reale: web_search.
       const found = HUTS
-        .map(h => ({ ...h, distanza_km: +haversineKm(here, h).toFixed(1) }))
-        .filter(h => h.distanza_km <= raggio_km)
-        .sort((a, b) => a.distanza_km - b.distanza_km)
+        .map(h => ({ ...h, _d: haversineKm(here, h) }))
+        .filter(h => h._d <= raggio_km)
+        .sort((a, b) => a._d - b._d)
         .slice(0, max)
-        .map(h => ({ nome: h.name, tipo: h.type, quota_m: h.ele || undefined, distanza_km: h.distanza_km, lat: h.lat, lon: h.lon }));
-      return found.length ? asText({ da: { lat, lon }, raggio_km, rifugi: found })
+        .map(h => ({ nome: h.name, tipo: h.type, quota_m: h.ele || undefined, lat: h.lat, lon: h.lon }));
+      return found.length ? asText({ da: { lat, lon }, raggio_ricerca_km: raggio_km, nota: 'ordinati per vicinanza; la distanza reale a piedi non è la linea d\'aria', rifugi: found })
         : asError(`Nessun rifugio o bivacco entro ${raggio_km} km`);
     }
   );
@@ -288,7 +290,7 @@ export function createServer() {
           .filter(x => x.dist <= raggio_km)
           .sort((a, b) => a.dist - b.dist)
           .slice(0, max)
-          .map(x => ({ ...fmt(x.t), distanza_min_km: +x.dist.toFixed(1) }));
+          .map(x => fmt(x.t));
         return hits.length ? asText({ vicino_a: match.name, raggio_km, rotte: hits })
           : asError(`Nessuna rotta principale entro ${raggio_km} km da ${match.name}`);
       }
@@ -316,12 +318,12 @@ export function createServer() {
       if (lat == null || lon == null) return asError('Serve localita oppure lat+lon');
       const here = { lat, lon };
       const found = CAMPERS
-        .map(c => ({ ...c, distanza_km: +haversineKm(here, c).toFixed(1) }))
-        .filter(c => c.distanza_km <= raggio_km)
-        .sort((a, b) => a.distanza_km - b.distanza_km)
+        .map(c => ({ ...c, _d: haversineKm(here, c) }))
+        .filter(c => c._d <= raggio_km)
+        .sort((a, b) => a._d - b._d)
         .slice(0, max)
-        .map(c => ({ nome: c.name, tipo: c.type, quota_m: c.ele || undefined, distanza_km: c.distanza_km, lat: c.lat, lon: c.lon }));
-      return found.length ? asText({ da: { lat, lon }, raggio_km, soste_camper: found })
+        .map(c => ({ nome: c.name, tipo: c.type, quota_m: c.ele || undefined, lat: c.lat, lon: c.lon }));
+      return found.length ? asText({ da: { lat, lon }, raggio_ricerca_km: raggio_km, soste_camper: found })
         : asError(`Nessuna sosta camper mappata entro ${raggio_km} km`);
     }
   );

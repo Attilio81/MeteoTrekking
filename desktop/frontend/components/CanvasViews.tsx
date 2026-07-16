@@ -11,14 +11,13 @@ function Table({ titolo, rows, camper }: { titolo: string; rows: any[]; camper?:
       <h2 className="cv-h">{camper ? "🚐" : "🛖"} {titolo} <span className="cv-count">{rows?.length ?? 0}</span></h2>
       <div className="cv-tbl-wrap">
         <table className="cv-tbl">
-          <thead><tr><th>Nome</th><th>Tipo</th><th>Quota</th><th>Distanza</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Tipo</th><th>Quota</th></tr></thead>
           <tbody>
             {(rows || []).map((r, i) => (
               <tr key={i}>
                 <td className="cv-name">{r.nome}</td>
                 <td>{r.tipo}</td>
                 <td className="cv-num">{r.quota_m ? `${r.quota_m} m` : "—"}</td>
-                <td className="cv-num">{r.distanza_km} km</td>
               </tr>
             ))}
           </tbody>
@@ -68,7 +67,7 @@ function Sentieri({ data }: { data: any }) {
                 <td className="cv-name">{r.nome || "—"}</td>
                 <td>{r.numero || "—"}</td>
                 <td>{r.rete || "—"}</td>
-                <td className="cv-num">{r.lunghezza_km ? `${r.lunghezza_km} km` : (r.distanza_min_km != null ? `~${r.distanza_min_km} km` : "—")}</td>
+                <td className="cv-num">{r.lunghezza_km ? `${r.lunghezza_km} km` : "—"}</td>
                 <td>{r.difficolta || "—"}</td>
               </tr>
             ))}

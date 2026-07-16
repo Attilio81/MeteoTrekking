@@ -6,6 +6,7 @@ import { CopilotSidebar } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { MapCanvas } from "@/components/MapCanvas";
 import { CopilotConfig } from "@/components/CopilotConfig";
+import { BrandBar } from "@/components/BrandBar";
 import { CanvasProvider } from "@/lib/canvasStore";
 
 export default function Page() {
@@ -18,10 +19,14 @@ export default function Page() {
     setMounted(true);
   }, []);
 
+  // nuovo threadId = conversazione backend azzerata (niente storia ripescata da session.db)
+  const newChat = () => setThreadId("t-" + Date.now());
+
   return (
     <CanvasProvider>
     <CopilotKit runtimeUrl="/api/copilotkit" agent="my_agent" threadId={threadId} showDevConsole={false}>
       <CopilotConfig />
+      <BrandBar onNewChat={newChat} />
       <MapCanvas />
       {mounted && (
         <CopilotSidebar

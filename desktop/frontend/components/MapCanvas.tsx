@@ -2,6 +2,7 @@
 
 import { useCanvas } from "@/lib/canvasStore";
 import { CanvasBody } from "./CanvasViews";
+import { SuggestionChips } from "./SuggestionChips";
 
 // Canvas principale: la mappa (index.html in iframe) resta sempre montata (stato
 // preservato); quando l'agente produce un elenco/previsione, un pannello la copre
@@ -22,6 +23,7 @@ export function MapCanvas() {
         title="Mappa MeteoTrekking"
         style={{ display: view ? "none" : "block" }}
       />
+      {!view && <SuggestionChips />}
     </main>
   );
 }

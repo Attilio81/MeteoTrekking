@@ -17,11 +17,16 @@ const OVERPASS = [
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
 
-// aires camper (caravan_site) + parcheggi che ammettono camper
+// aree che accettano camper: aires (caravan_site), campeggi con camper/roulotte
+// (camp_site + motorhome/caravans), parcheggi per camper. NB: molti "area sosta camper"
+// comunali sono taggati camp_site, non caravan_site (es. Le Giare a Carcoforo).
 const QUERY = `[out:json][timeout:180];
 (
   nwr["tourism"="caravan_site"](${BBOX});
   nwr["amenity"="parking"]["motorhome"~"^(yes|designated)$"](${BBOX});
+  nwr["amenity"="parking"]["caravans"="yes"](${BBOX});
+  nwr["tourism"="camp_site"]["motorhome"~"^(yes|designated)$"](${BBOX});
+  nwr["tourism"="camp_site"]["caravans"="yes"](${BBOX});
 );
 out center tags;`;
 
@@ -32,7 +37,7 @@ function toEntry(el) {
   const lon = el.lon ?? el.center?.lon;
   if (lat == null || lon == null) return null;
   const t = el.tags || {};
-  const type = t.tourism === 'caravan_site' ? 'c' : 'p';
+  const type = t.amenity === 'parking' ? 'p' : 'c';   // parcheggio vs area/campeggio camper
   const name = (t.name || t['name:it'] || (type === 'c' ? 'Area sosta camper' : 'Parcheggio camper')).trim();
   const ele = Math.round(parseFloat(t.ele)) || 0;
   return [name, round(lat), round(lon), ele, type];
