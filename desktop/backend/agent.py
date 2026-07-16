@@ -10,6 +10,7 @@ verso Open-Meteo/Meteoalarm/OSM tramite i tool.
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -64,6 +65,36 @@ def web_search(query: str) -> str:
         f"{it.get('title', '')}\n{it.get('url', '')}\n{it.get('content', '')}" for it in items
     )
 
+
+@tool(name="web_extract",
+      description="Estrae il TESTO COMPLETO di 1-3 pagine web (passa gli URL trovati con "
+                  "web_search). Usalo per leggere le schede degli itinerari e ricavare dati REALI "
+                  "(dislivello, tempo, difficoltà, punto di partenza) da citare senza inventare.")
+def web_extract(urls: list) -> str:
+    key = os.environ.get("TAVILY_API_KEY")
+    if not key:
+        return "Estrazione web non configurata (manca TAVILY_API_KEY)."
+    try:
+        r = httpx.post("https://api.tavily.com/extract",
+                       json={"api_key": key, "urls": (urls or [])[:3]}, timeout=35)
+    except Exception as e:
+        return f"Errore di rete nell'estrazione: {e}"
+    if r.status_code != 200:
+        return f"Estrazione fallita (HTTP {r.status_code})."
+    res = r.json().get("results") or []
+    if not res:
+        return "Nessun contenuto estratto."
+    return "\n\n".join(f"### {x.get('url','')}\n{(x.get('raw_content') or '')[:4000]}" for x in res)
+
+
+@tool(name="componi_trekking",
+      description="Mostra un elenco di itinerari trekking nel canvas (schede stile Komoot). "
+                  "Passa SOLO gite REALI ricavate da sentieri/web_search/web_extract, MAI inventate. "
+                  "Ogni gita è un oggetto con: nome, meta, dislivello_m, tempo, difficolta, partenza, "
+                  "perche (1 riga), fonte (URL). Lascia vuoto un campo se non lo hai trovato: non inventarlo.")
+def componi_trekking(gite: list) -> str:
+    return json.dumps({"trekking": gite or []}, ensure_ascii=False)
+
 INSTRUCTIONS = """\
 Sei l'assistente MeteoTrekking per le Alpi occidentali (Piemonte, Valle d'Aosta, Liguria
 e Alpi francesi/svizzere limitrofe). Aiuti a pianificare escursioni con dati veri.
@@ -99,13 +130,16 @@ Regole:
 - DISTANZE: i tool NON danno distanze a piedi e NON esiste più la linea d'aria (fuorviante in
   montagna). Le metriche vere sono DISLIVELLO, TEMPO di percorrenza, DIFFICOLTÀ, lunghezza della
   rotta. Per queste usa `web_search` (schede CAI/portali). Non inventare km né tempi.
-- "I TREKKING/ESCURSIONI MIGLIORI VICINO A X" (o "cosa cammino da X", "gite da X"): rispondi con
-  un ELENCO di itinerari dal punto di partenza X. Procedi così:
-  1. `sentieri` (localita=X) per le rotte segnate strutturate (nome, numero, difficoltà, lunghezza);
-  2. `web_search` "migliori escursioni / trekking da X + (valle)" per gli itinerari consigliati
-     con dislivello, tempo, difficoltà, meta (rifugio/lago/colle);
-  3. presenta 4-6 gite con: nome, meta, dislivello, tempo, difficoltà, e 1 riga sul perché.
-  Ordina dalle più facili alle più impegnative. Cita le fonti web.
+- "I TREKKING/ESCURSIONI MIGLIORI VICINO A X" (o "cosa cammino da X", "gite da X"): produci un
+  ELENCO CORPOSO stile Komoot, con dati REALI e ZERO invenzione. Procedi così:
+  1. `sentieri` (localita=X) per le rotte segnate (nome, numero, difficoltà, lunghezza);
+  2. `web_search` "migliori escursioni / trekking da X + valle" per trovare le pagine giuste;
+  3. `web_extract` sulle 2-3 pagine più promettenti (portali escursionistici/CAI) per LEGGERE i
+     dati veri: dislivello, tempo, difficoltà, punto di partenza, meta;
+  4. chiama `componi_trekking(gite=[...])` con 4-6 itinerari compilati SOLO con ciò che hai
+     letto. Ogni gita: nome, meta, dislivello_m, tempo, difficolta, partenza, perche, fonte(URL).
+     Se un dato non c'è nella fonte, lascialo vuoto — NON inventarlo.
+  Nel messaggio di chat aggiungi 1-2 righe di sintesi e le fonti. Le schede compaiono nel canvas.
 - Per "che tempo fa / conviene salire / quando esco" usa SEMPRE `previsioni`.
 - Prima di consigliare una gita, controlla il rischio temporale e le raffiche: in quota vento
   > ~40 km/h o temporale = sconsiglia con chiarezza, non addolcire.
@@ -121,8 +155,8 @@ agent = Agent(
     id="meteotrekking-agent",
     model=build_model(),
     db=SqliteDb(db_file="session.db"),
-    tools=[mcp_tools, web_search],
-    tool_call_limit=10,   # anti-loop: DeepSeek altrimenti ripete la web search all'infinito
+    tools=[mcp_tools, web_search, web_extract, componi_trekking],
+    tool_call_limit=12,   # anti-loop; il flusso trekking usa sentieri+search+extract+componi
     instructions=INSTRUCTIONS,
     add_history_to_context=True,
     num_history_runs=4,

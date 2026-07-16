@@ -99,8 +99,35 @@ function Allerte({ data }: { data: any }) {
   );
 }
 
+function Trekking({ gite }: { gite: any[] }) {
+  return (
+    <div className="cv">
+      <h2 className="cv-h">🥾 Itinerari <span className="cv-count">{gite?.length ?? 0}</span></h2>
+      <div className="cv-treks">
+        {(gite || []).map((g, i) => (
+          <div className="cv-trek" key={i}>
+            <div className="cv-trek-top">
+              <span className="cv-trek-nome">{g.nome}</span>
+              {g.difficolta && <span className="cv-trek-diff">{g.difficolta}</span>}
+            </div>
+            {g.meta && <div className="cv-trek-meta">→ {g.meta}</div>}
+            <div className="cv-trek-badges">
+              {(g.dislivello_m || g.dislivello_m === 0) && <span className="cv-badge">⬆ {g.dislivello_m} m</span>}
+              {g.tempo && <span className="cv-badge">⏱ {g.tempo}</span>}
+              {g.partenza && <span className="cv-badge">📍 {g.partenza}</span>}
+            </div>
+            {g.perche && <div className="cv-trek-why">{g.perche}</div>}
+            {g.fonte && <a className="cv-trek-src" href={g.fonte} target="_blank" rel="noreferrer">fonte ↗</a>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function CanvasBody({ view }: { view: NonNullable<View> }) {
   const { tool, data } = view;
+  if (tool === "componi_trekking") return <Trekking gite={data.trekking} />;
   if (tool === "rifugi_vicini") return <Table titolo="Rifugi vicini" rows={data.rifugi} />;
   if (tool === "soste_camper_vicine") return <Table titolo="Soste camper" rows={data.soste_camper} camper />;
   if (tool === "previsioni") return <Previsioni data={data} />;
@@ -112,4 +139,5 @@ export function CanvasBody({ view }: { view: NonNullable<View> }) {
 // tool che meritano una vista nel canvas (gli altri restano solo chip in chat)
 export const CANVAS_TOOLS = new Set([
   "rifugi_vicini", "soste_camper_vicine", "previsioni", "sentieri", "allerte_meteo",
+  "componi_trekking",
 ]);
