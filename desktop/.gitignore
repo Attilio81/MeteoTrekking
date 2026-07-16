@@ -8,3 +8,8 @@ session.db
 punti.db
 frontend/public/map.html
 frontend/next-env.d.ts
+# artefatti di build/packaging
+backend/dist/
+backend/build/
+backend/*.spec
+dist-app/

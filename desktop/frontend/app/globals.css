@@ -19,11 +19,44 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .bb-title { font-weight: 700; font-size: 18px; }
 .bb-sub { font-size: 12.5px; opacity: .82; margin-left: 4px; }
 @media (max-width: 860px) { .bb-sub { display: none; } }
+.bb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .bb-new {
-  margin-left: auto; border: 1px solid rgba(255,255,255,.5); background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.5); background: rgba(255,255,255,.15);
   color: #fff; border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer;
 }
 .bb-new:hover { background: rgba(255,255,255,.28); }
+.bb-gear {
+  border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.12); color: #fff;
+  width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; line-height: 1;
+}
+.bb-gear:hover { background: rgba(255,255,255,.26); }
+
+/* --- Modale impostazioni --- */
+.modal-bg { position: fixed; inset: 0; z-index: 50; background: rgba(15,22,20,.5);
+  display: flex; align-items: center; justify-content: center; }
+.modal { width: min(440px, 92vw); background: #fff; color: #1b2422; border-radius: 16px;
+  padding: 22px 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.modal h2 { margin: 0 0 16px; font-size: 19px; }
+.modal label { display: block; font-size: 13px; font-weight: 600; color: #3f4b47; margin-bottom: 14px; }
+.modal input, .modal select { width: 100%; margin-top: 5px; padding: 8px 10px; font-size: 14px; font-weight: 400;
+  border: 1px solid #d9e0dd; border-radius: 8px; background: #f6f8f7; color: #1b2422; }
+.modal input:focus, .modal select:focus { outline: 2px solid #2f7d76; border-color: #2f7d76; }
+.tag-ok { font-weight: 600; color: #2f8f4e; font-size: 12px; }
+.tag-warn { font-weight: 600; color: #c0432f; font-size: 12px; }
+.modal-hint { font-size: 12.5px; color: #52605c; margin: 4px 0 16px; }
+.modal-actions { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.modal-msg { margin-right: auto; font-size: 13px; color: #2f8f4e; }
+.modal-actions button { border: 1px solid #d9e0dd; background: #fff; color: #2f7d76; border-radius: 8px;
+  padding: 8px 16px; font-size: 14px; cursor: pointer; }
+.modal-actions button.primary { background: #2f7d76; color: #fff; border-color: #2f7d76; }
+.modal-actions button:disabled { opacity: .6; cursor: default; }
+@media (prefers-color-scheme: dark) {
+  .modal { background: #1a2320; color: #e8efec; }
+  .modal label { color: #c3d0cb; }
+  .modal input, .modal select { background: #202b28; border-color: #2c3835; color: #e8efec; }
+  .modal-actions button { background: #202b28; border-color: #2c3835; color: #5fb8ae; }
+  .modal-actions button.primary { background: #2f7d76; color: #fff; }
+}
 
 /* --- Strip suggerimenti sopra la mappa --- */
 .suggbar {

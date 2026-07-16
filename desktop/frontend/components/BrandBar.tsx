@@ -1,6 +1,7 @@
 "use client";
 
 import { useCanvas } from "@/lib/canvasStore";
+import { Settings } from "./Settings";
 
 // Barra superiore: identità del prodotto + "Nuova chat". Occupa la fascia sopra la
 // mappa/canvas (lascia i 448px della chat a destra).
@@ -15,7 +16,10 @@ export function BrandBar({ onNewChat }: { onNewChat: () => void }) {
       <span className="bb-logo" aria-hidden="true">🏔️</span>
       <span className="bb-title">MeteoTrekking</span>
       <span className="bb-sub">Alpi occidentali · meteo · rifugi · sentieri · soste camper</span>
-      <button className="bb-new" onClick={nuovaChat}>✏️ Nuova chat</button>
+      <span className="bb-actions">
+        <Settings />
+        <button className="bb-new" onClick={nuovaChat}>✏️ Nuova chat</button>
+      </span>
     </header>
   );
 }

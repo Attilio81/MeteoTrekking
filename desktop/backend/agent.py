@@ -18,6 +18,7 @@ from agno.agent import Agent
 from agno.db.sqlite import SqliteDb
 from agno.os import AgentOS
 from agno.os.interfaces.agui import AGUI
+from fastapi import Request
 import httpx
 from agno.tools import tool
 from agno.tools.mcp import MCPTools
@@ -27,8 +28,9 @@ from model_factory import build_model
 
 load_dotenv()
 
-# server MCP MeteoTrekking: repo_root/mcp/server.mjs (questo file è in desktop/backend/)
-MCP_SERVER = str((Path(__file__).resolve().parents[2] / "mcp" / "server.mjs"))
+# server MCP MeteoTrekking: repo_root/mcp/server.mjs (questo file è in desktop/backend/).
+# Override con MCP_SERVER_PATH per il bundle portatile (dove il layout differisce).
+MCP_SERVER = os.environ.get("MCP_SERVER_PATH") or str((Path(__file__).resolve().parents[2] / "mcp" / "server.mjs"))
 
 # stdio con path esplicito (il path del repo può contenere spazi -> niente shell-split)
 mcp_tools = MCPTools(
@@ -116,6 +118,10 @@ Hai questi tool (usali, non inventare):
   quelli i tool dedicati sono la verità. Fai al MASSIMO 2 ricerche web per domanda: se
   non trovi risultati, NON ripetere la ricerca all'infinito — di' che non hai trovato
   informazioni affidabili e fermati.
+- FALLBACK SENZA RICERCA WEB: se `web_search`/`web_extract` rispondono "non configurato"
+  (nessuna chiave Tavily), NON bloccarti: per gli itinerari usa `sentieri` + la tua conoscenza,
+  chiama comunque `componi_trekking` con le rotte note, e avvisa che senza chiave di ricerca web
+  dislivello e tempi sono indicativi (l'utente può inserire la chiave nelle Impostazioni).
 
 Memoria (importante):
 - Hai una MEMORIA persistente. I dati dei tool (OSM/Open-Meteo) sono la BASE autorevole ma
@@ -188,6 +194,62 @@ def info():
             "model": getattr(agent.model, "id", "?")}
 
 
+def _write_env(updates: dict) -> None:
+    """Aggiorna .env nella cwd preservando le altre righe (chiavi in chiaro solo su disco locale)."""
+    path = Path.cwd() / ".env"
+    seen, out = set(), []
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            k = line.split("=", 1)[0].strip()
+            if k in updates:
+                out.append(f"{k}={updates[k]}"); seen.add(k)
+            else:
+                out.append(line)
+    for k, v in updates.items():
+        if k not in seen:
+            out.append(f"{k}={v}")
+    path.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+@app.get("/api/config")
+def get_config():
+    # non restituisce mai i valori delle chiavi, solo se sono impostate
+    return {
+        "provider": os.environ.get("AI_PROVIDER", "deepseek"),
+        "model": getattr(agent.model, "id", "?"),
+        "deepseek_model": os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"),
+        "has_deepseek": bool(os.environ.get("DEEPSEEK_API_KEY")),
+        "has_tavily": bool(os.environ.get("TAVILY_API_KEY")),
+        "modelli_deepseek": ["deepseek-chat", "deepseek-reasoner"],
+    }
+
+
+@app.post("/api/config")
+async def set_config(req: Request):
+    body = await req.json()
+    updates = {}
+    for src, env in [("ai_provider", "AI_PROVIDER"), ("deepseek_api_key", "DEEPSEEK_API_KEY"),
+                     ("deepseek_model", "DEEPSEEK_MODEL"), ("tavily_api_key", "TAVILY_API_KEY")]:
+        v = body.get(src)
+        if v:  # ignora vuoti: non sovrascrive una chiave già presente con ""
+            os.environ[env] = v
+            updates[env] = v
+    if updates:
+        _write_env(updates)
+    # applica subito il cambio provider/modello (Tavily è letto per-chiamata, già live)
+    warn = None
+    try:
+        agent.model = build_model()
+    except Exception as e:
+        warn = str(e)
+    return {"ok": True, "provider": os.environ.get("AI_PROVIDER", "deepseek"),
+            "model": getattr(agent.model, "id", "?"),
+            "has_deepseek": bool(os.environ.get("DEEPSEEK_API_KEY")),
+            "has_tavily": bool(os.environ.get("TAVILY_API_KEY")), **({"warn": warn} if warn else {})}
+
+
 if __name__ == "__main__":
-    # niente reload=True: romperebbe la connessione MCP nel ciclo di vita FastAPI
-    agent_os.serve(app="agent:app", host="127.0.0.1", port=7000, reload=False)
+    # uvicorn con l'oggetto app (non la stringa "agent:app"): funziona anche da .exe
+    # PyInstaller, dove il modulo "agent" non è importabile per nome. Niente reload (romperebbe MCP).
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=7000)
