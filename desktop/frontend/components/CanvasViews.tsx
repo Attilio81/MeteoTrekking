@@ -106,17 +106,15 @@ function Trekking({ gite }: { gite: any[] }) {
       <div className="cv-treks">
         {(gite || []).map((g, i) => (
           <div className="cv-trek" key={i}>
-            <div className="cv-trek-top">
-              <span className="cv-trek-nome">{g.nome}</span>
-              {g.difficolta && <span className="cv-trek-diff">{g.difficolta}</span>}
-            </div>
+            <h3 className="cv-trek-nome">{g.nome}</h3>
             {g.meta && <div className="cv-trek-meta">→ {g.meta}</div>}
             <div className="cv-trek-badges">
+              {g.difficolta && <span className="cv-badge diff">{g.difficolta}</span>}
               {(g.dislivello_m || g.dislivello_m === 0) && <span className="cv-badge">⬆ {g.dislivello_m} m</span>}
               {g.tempo && <span className="cv-badge">⏱ {g.tempo}</span>}
               {g.partenza && <span className="cv-badge">📍 {g.partenza}</span>}
             </div>
-            {g.perche && <div className="cv-trek-why">{g.perche}</div>}
+            {g.perche && <p className="cv-trek-why">{g.perche}</p>}
             {g.fonte && <a className="cv-trek-src" href={g.fonte} target="_blank" rel="noreferrer">fonte ↗</a>}
           </div>
         ))}
